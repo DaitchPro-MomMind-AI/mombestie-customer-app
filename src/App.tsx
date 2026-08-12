@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import type { JSX } from 'react'
-import { AI_SELF_DISCLOSURE, DEMO_CHILD_ID, HEALTH_DISCLAIMER, PLANNER_CATEGORY_TO_LOG_TYPE, buildTimeline, detectCountry, formatPrice, needsHealthDisclaimer, planPrice, reconcilePlanner, useTrackingLogs } from './services'
+import { AI_SELF_DISCLOSURE, DEMO_CHILD_ID, HEALTH_DISCLAIMER, PLANNER_CATEGORY_TO_LOG_TYPE, buildTimeline, detectCountry, formatPrice, needsHealthDisclaimer, planPrice, reconcilePlanner, useBookings, useTrackingLogs } from './services'
 import type { NewTrackingLog } from './services'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -4737,7 +4737,7 @@ function MessageSheet({ provider, onClose }: { provider: Provider; onClose: () =
   )
 }
 
-function BookingSheet({ provider, onClose }: { provider: Provider; onClose: () => void }) {
+function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClose: () => void; onSave: (input: { providerName: string; providerRole: string; day: string; slot: string; durationHrs: number; note?: string; estTotal: string }) => void }) {
   const days = ['Mon Aug 11','Tue Aug 12','Wed Aug 13','Thu Aug 14','Fri Aug 15','Sat Aug 16','Sun Aug 17']
   const slots = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','2:00 PM','3:00 PM','4:00 PM','6:00 PM']
   const durations = ['2 hrs','3 hrs','4 hrs','6 hrs','8 hrs']
@@ -4752,11 +4752,25 @@ function BookingSheet({ provider, onClose }: { provider: Provider; onClose: () =
 
   const canNext = selDay && selSlot
   const hrs = parseInt(selDur)
-  const total = selDur ? `$${parseInt(provider.price) * hrs}` : '—'
+  // provider.price is like "$24/hr" — parseInt() chokes on the leading "$"
+  // and silently returns NaN, which used to only ever be displayed (never
+  // persisted, so the bug was invisible). Strip to digits first.
+  const hourlyRate = parseInt(provider.price.replace(/[^0-9.]/g, '')) || 0
+  const total = selDur ? `$${hourlyRate * hrs}` : '—'
 
   const handleBook = () => {
     setBooking(true)
-    setTimeout(() => { setBooking(false); setBooked(true) }, 1400)
+    setTimeout(() => {
+      setBooking(false)
+      setBooked(true)
+      // Real persisted write — see docs/ARCHITECTURE.md §6/§13. Marketplace
+      // is still mock (no live availability, no payment capture), but the
+      // request itself is no longer thrown away.
+      onSave({
+        providerName: provider.name, providerRole: provider.role,
+        day: selDay!, slot: selSlot!, durationHrs: hrs, note: note || undefined, estTotal: total,
+      })
+    }, 1400)
   }
 
   return (
@@ -4964,6 +4978,7 @@ function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [messageProvider, setMessageProvider] = useState<Provider | null>(null)
   const [bookingProvider, setBookingProvider] = useState<Provider | null>(null)
+  const { bookings, save: saveBooking } = useBookings(DEMO_CHILD_ID)
 
   const categories = [
     { icon: '👶', label: 'Babysitters', color: '#EE674E', bg: '#FFD6C9' },
@@ -5078,11 +5093,31 @@ function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
             </div>
           )}
         </div>
+
+        {/* My Requests — real persisted bookings, see docs/ARCHITECTURE.md §6/§13 */}
+        {bookings.length > 0 && (
+          <div>
+            <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-2">My Requests</p>
+            <div className="space-y-2">
+              {bookings.map(b => (
+                <div key={b.id} className="glass-card rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#242424] truncate">{b.providerName}</p>
+                    <p className="text-xs text-[#6E6E73]">{b.day} · {b.slot} · {b.durationHrs} hrs</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0" style={{ background: '#FEF3CD', color: '#B8860B' }}>
+                    Requested
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
 
     {messageProvider && <MessageSheet provider={messageProvider} onClose={() => setMessageProvider(null)} />}
-    {bookingProvider && <BookingSheet provider={bookingProvider} onClose={() => setBookingProvider(null)} />}
+    {bookingProvider && <BookingSheet provider={bookingProvider} onClose={() => setBookingProvider(null)} onSave={saveBooking} />}
     </>
   )
 }
