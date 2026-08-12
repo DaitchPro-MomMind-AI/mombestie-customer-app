@@ -1,0 +1,121 @@
+import { useState } from 'react'
+import { DEMO_CHILD_ID, PLANNER_CATEGORY_TO_LOG_TYPE, reconcilePlanner, useTrackingLogs } from '../services'
+
+const plannerItems = [
+  { time: '7:25 AM', label: 'Bottle feed', icon: '🍼', cat: 'Feeding', color: '#6299D5', done: true, section: 'Morning' },
+  { time: '8:15 AM', label: 'Breakfast', icon: '🥣', cat: 'Meal', color: '#55A67A', done: true, section: 'Morning' },
+  { time: '9:00 AM', label: 'Tummy-time', icon: '🧸', cat: 'Activity', color: '#EE674E', done: false, section: 'Morning' },
+  { time: '9:45 AM', label: 'Nap (predicted)', icon: '🌙', cat: 'Sleep', color: '#B0A0F0', done: false, section: 'Morning', predicted: true },
+  { time: '12:00 PM', label: 'Lunch', icon: '🥣', cat: 'Meal', color: '#55A67A', done: false, section: 'Afternoon' },
+  { time: '1:30 PM', label: 'Bottle feed', icon: '🍼', cat: 'Feeding', color: '#6299D5', done: false, section: 'Afternoon' },
+  { time: '2:00 PM', label: 'Pediatric appointment', icon: '🏥', cat: 'Appointment', color: '#6299D5', done: false, section: 'Afternoon' },
+  { time: '5:00 PM', label: 'Bottle feed', icon: '🍼', cat: 'Feeding', color: '#6299D5', done: false, section: 'Evening' },
+  { time: '7:00 PM', label: 'Bath time', icon: '🛁', cat: 'Routine', color: '#F47B66', done: false, section: 'Evening' },
+  { time: '7:45 PM', label: 'Bedtime (predicted)', icon: '🌙', cat: 'Sleep', color: '#B0A0F0', done: false, section: 'Evening', predicted: true },
+]
+
+export function PlannerScreen() {
+  // Feeding/Meal/Sleep slots reconcile against real TrackingLogs (nearest
+  // match within 90 min) instead of a disconnected local checkbox — see
+  // src/services/plannerReconcile.ts. Activity/Appointment/Routine and any
+  // `predicted` slot stay local-only toggles; there's no service for those yet.
+  const { logs, save, remove } = useTrackingLogs(DEMO_CHILD_ID)
+  const reconciled = reconcilePlanner(plannerItems, logs)
+  const [manualDone, setManualDone] = useState<Set<number>>(new Set())
+  const sections = ['Morning', 'Afternoon', 'Evening'] as const
+
+  const completed = [...new Set([...manualDone, ...reconciled.keys()])]
+
+  const toggle = (i: number) => {
+    const item = plannerItems[i]
+    const logType = !item.predicted ? PLANNER_CATEGORY_TO_LOG_TYPE[item.cat] : undefined
+
+    if (!logType) {
+      setManualDone(s => {
+        const next = new Set(s)
+        next.has(i) ? next.delete(i) : next.add(i)
+        return next
+      })
+      return
+    }
+
+    const existing = reconciled.get(i)
+    if (existing) {
+      remove(existing.id)
+      return
+    }
+    if (logType === 'Feed') save({ type: 'Feed', feed: { amountOz: 5, method: 'Bottle' } })
+    else if (logType === 'Meal') save({ type: 'Meal', meal: { foods: [item.label] } })
+    else if (logType === 'Sleep') save({ type: 'Sleep', sleep: { durationSec: 0 } })
+  }
+
+  return (
+    <div className="scroll-area flex-1 px-4 pt-2 pb-4 slide-up">
+      {/* Header */}
+      <div className="flex items-center justify-between py-3 mb-2">
+        <div>
+          <h1 className="font-display text-2xl text-[#242424]">Today</h1>
+          <p className="text-sm text-[#6E6E73]">Monday, August 10</p>
+        </div>
+        <button className="action-btn coral-gradient text-white text-xs font-semibold px-3.5 py-2 rounded-xl">
+          ✨ Optimize Day
+        </button>
+      </div>
+
+      {/* Progress */}
+      <div className="glass-card rounded-2xl p-3.5 mb-4 flex items-center gap-3">
+        <div className="relative w-12 h-12 flex-shrink-0">
+          <svg width="48" height="48" className="progress-ring">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#FFD6C9" strokeWidth="4" />
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#EE674E" strokeWidth="4"
+              strokeDasharray={`${(completed.length / plannerItems.length) * 125.6} 125.6`}
+              strokeLinecap="round" />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-[#EE674E]">
+            {Math.round((completed.length / plannerItems.length) * 100)}%
+          </span>
+        </div>
+        <div>
+          <p className="font-semibold text-[#242424] text-sm">{completed.length} of {plannerItems.length} done</p>
+          <p className="text-xs text-[#6E6E73]">Great progress, Sarah!</p>
+        </div>
+        <button className="ml-auto w-8 h-8 rounded-xl bg-[#FFD6C9] flex items-center justify-center text-[#EE674E] text-sm">+</button>
+      </div>
+
+      {sections.map(section => {
+        const items = plannerItems.filter(p => p.section === section)
+        return (
+          <div key={section} className="mb-5">
+            <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider mb-2">{section}</p>
+            <div className="space-y-2">
+              {items.map((item, i) => {
+                const idx = plannerItems.indexOf(item)
+                const done = completed.includes(idx)
+                return (
+                  <button
+                    key={i}
+                    onClick={() => toggle(idx)}
+                    className={`action-btn w-full glass-card rounded-xl p-3 flex items-center gap-3 text-left ${done ? 'opacity-60' : ''}`}
+                  >
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0"
+                      style={{ background: `${item.color}22` }}>
+                      {done ? '✓' : item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${done ? 'line-through text-[#6E6E73]' : 'text-[#242424]'}`}>
+                        {item.label}
+                        {item.predicted && <span className="ml-1 text-[10px] text-[#B0A0F0] font-normal no-underline">predicted</span>}
+                      </p>
+                      <p className="text-[11px] text-[#6E6E73]">{item.cat}</p>
+                    </div>
+                    <span className="text-[11px] text-[#6E6E73] flex-shrink-0">{item.time}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
