@@ -6683,9 +6683,11 @@ export default function App() {
 
   // Responsive layout decisions
   const isMobile = vw < 640
-  const isTablet = vw >= 640 && vw < 1024
 
-  // On mobile: fill screen. On tablet/desktop: phone frame scaled to fit.
+  // On mobile: fill screen. On tablet/desktop: phone frame scaled to fit,
+  // centered with no side panel — see docs/ARCHITECTURE.md for why the
+  // desktop marketing sidebar was removed (2026-08-11, user request: match
+  // the phone-only mockup on every viewport).
   const frameW = 390
   const frameH = 844
   const scale = isMobile ? 1 : Math.min(1, (vw * 0.9) / frameW, (vh * 0.95) / frameH)
@@ -6707,25 +6709,6 @@ export default function App() {
           <div style={{ position: 'fixed', width: 500, height: 500, borderRadius: '50%', background: 'rgba(246,182,165,0.22)', filter: 'blur(80px)', top: '-100px', left: '-120px', pointerEvents: 'none' }} />
           <div style={{ position: 'fixed', width: 400, height: 400, borderRadius: '50%', background: 'rgba(98,153,213,0.13)', filter: 'blur(70px)', bottom: '-80px', right: '-100px', pointerEvents: 'none' }} />
         </>
-      )}
-
-      {/* Tablet/desktop sidebar label */}
-      {!isMobile && !isTablet && (
-        <div className="hidden lg:flex flex-col items-start gap-4 mr-16" style={{ maxWidth: 260 }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg,#EE674E,#F47B66)', boxShadow: '0 4px 12px rgba(238,103,78,0.35)' }}>🌸</div>
-            <span className="font-display text-2xl text-[#242424]">MomMind</span>
-          </div>
-          <p className="text-sm text-[#6E6E73] leading-relaxed">Your AI-powered parenting companion. Track, plan, and thrive — every step of the way.</p>
-          <div className="flex flex-col gap-2 mt-2">
-            {['🧠 AI Parenting Assistant','📅 Smart Daily Planner','👨‍👩‍👧 Family & Caregiver Hub','📊 Growth & Milestone Tracker'].map((f,i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#EE674E]" />
-                <span className="text-xs text-[#6E6E73]">{f}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* Phone frame */}
