@@ -14,7 +14,8 @@ logs/
 .tmp-*
 
 # Poly-repo split: these live in their own repos (mommind-website,
-# mommind-provider-portal, mommind-admin-portal, mommind-docs) — see
-# docs/README.md / mommind-docs for the repo map.
+# mommind-provider-portal, mommind-admin-portal, mommind-docs,
+# mommind-backend) — see docs/README.md / mommind-docs for the repo map.
 /apps/
 /docs/
+/backend/
