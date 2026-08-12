@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { detectCountry, formatPrice } from '../services'
+import { detectCountry, formatPrice, signIn, signUp } from '../services'
 
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [mode, setMode] = useState<'landing' | 'signin' | 'signup' | 'payment'>('landing')
+  const [mode, setMode] = useState<'landing' | 'signin' | 'signup' | 'payment' | 'confirm-email'>('landing')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -11,6 +11,12 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [cardCvc, setCardCvc] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  // Supabase's "Confirm email" setting is on for this project (see
+  // docs/PROJECT_REPORT.md §10 Phase 1) -- signUp() succeeds but returns no
+  // session until the user clicks the emailed link, so we can't call
+  // onLogin() yet even though their account is real.
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
   // Country-config-driven pricing — see docs/ARCHITECTURE.md §7.1/§7.2. Same
   // mechanism and same reference numbers as apps/website/src/i18n.ts.
   const [country] = useState(() => detectCountry())
@@ -24,11 +30,44 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
     return digits.length >= 3 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
   }
 
-  const submit = () => {
+  const submit = async () => {
     if (loading) return
-    if (mode === 'signup') { setMode('payment'); return }
+    setAuthError(null)
+
+    if (mode === 'signup') {
+      if (!name.trim() || !email.trim() || !password.trim()) {
+        setAuthError('Please fill in your name, email, and password.')
+        return
+      }
+      setLoading(true)
+      const result = await signUp(email.trim(), password, name.trim())
+      setLoading(false)
+      if (!result.ok) { setAuthError(result.error ?? 'Sign up failed — please try again.'); return }
+      setNeedsConfirmation(!!result.needsEmailConfirmation)
+      setMode('payment')
+      return
+    }
+
+    if (mode === 'payment') {
+      // Payment itself stays UI-only — FEATURES.realPayments is false, see
+      // docs/ARCHITECTURE.md §9. The account was already created for real
+      // in the signup step above; this just completes the trial-start UX.
+      if (needsConfirmation) { setMode('confirm-email'); return }
+      setLoading(true)
+      setTimeout(() => { setLoading(false); onLogin() }, 1200)
+      return
+    }
+
+    // signin
+    if (!email.trim() || !password.trim()) {
+      setAuthError('Please enter your email and password.')
+      return
+    }
     setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin() }, 1600)
+    const result = await signIn(email.trim(), password)
+    setLoading(false)
+    if (!result.ok) { setAuthError(result.error ?? 'Sign in failed — check your email and password.'); return }
+    onLogin()
   }
 
   // ── Floating decorations ──────────────────────────────────────────────────
@@ -407,6 +446,12 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
             </div>
           )}
 
+          {authError && (
+            <div className="rounded-xl px-3.5 py-2.5 text-xs font-medium text-[#C94930]" style={{ background: '#FEEAE6', border: '1.5px solid #F6B6A5' }}>
+              ⚠️ {authError}
+            </div>
+          )}
+
           {/* Submit button */}
           <button
             onClick={submit}
@@ -421,7 +466,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
             {loading ? (
               <>
                 <div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white spin-slow" />
-                Setting up your account…
+                {isSignup ? 'Creating your account…' : 'Signing in…'}
               </>
             ) : (
               isSignup ? 'Next — Add Payment 💳' : 'Sign In ✨'
@@ -582,6 +627,8 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
                 <div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white spin-slow" />
                 Activating trial…
               </>
+            ) : needsConfirmation ? (
+              'Continue →'
             ) : (
               'Start My Free Trial 🎉'
             )}
@@ -604,4 +651,32 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
       </div>
     </div>
   )
+
+  // Reached after a real signUp() when Supabase requires email confirmation
+  // before a session exists — see docs/PROJECT_REPORT.md §10 Phase 1. The
+  // account genuinely exists at this point; we just can't call onLogin()
+  // honestly until they've confirmed, so this screen says so instead of
+  // faking success.
+  if (mode === 'confirm-email') return (
+    <div className="relative flex flex-col items-center justify-center overflow-hidden px-6 text-center" style={{ width: '100%', height: '100%', background: 'linear-gradient(175deg, #FFF3EE 0%, #FFD6C9 30%, #FFF8F4 100%)' }}>
+      <Decorations />
+      <div className="relative z-10">
+        <div className="pop-in w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4"
+          style={{ background: 'linear-gradient(135deg, #FFD6C9, #FFF8F4)', border: '2.5px dashed #F6B6A5' }}>
+          📬
+        </div>
+        <h2 className="font-display text-2xl text-[#242424] mb-2">Check your email</h2>
+        <p className="text-sm text-[#6E6E73] leading-relaxed max-w-xs">
+          We sent a confirmation link to <span className="font-semibold text-[#242424]">{email}</span>. Click it, then come back and sign in — your account is ready and waiting.
+        </p>
+        <button onClick={() => { setMode('signin'); setPassword('') }}
+          className="cartoon-btn mt-6 px-6 py-3 rounded-2xl font-bold text-sm"
+          style={{ background: '#FFF8F4', border: '2.5px solid #F6B6A5', boxShadow: '0 4px 0 #F6B6A5', color: '#EE674E' }}>
+          Back to Sign In
+        </button>
+      </div>
+    </div>
+  )
+
+  return null
 }

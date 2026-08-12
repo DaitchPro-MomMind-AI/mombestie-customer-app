@@ -5,6 +5,8 @@ export * from "./timeline";
 export * from "./features";
 export * from "./aiSafety";
 export * from "./countryConfig";
+export * from "./authService";
+export * from "./supabaseClient";
 export * from "./plannerReconcile";
 export * from "./bookingTypes";
 export * from "./bookingService";
