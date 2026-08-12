@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { addLog, listLogs, seedDemoHistoryOnce, todaySummary } from "./trackingService";
+import { addLog, deleteLog, listLogs, seedDemoHistoryOnce, todaySummary } from "./trackingService";
 import type { DailySummary, NewTrackingLog, TrackingLog } from "./types";
 
 /**
@@ -29,5 +29,13 @@ export function useTrackingLogs(childId: string) {
     [childId, refresh],
   );
 
-  return { logs, summary, save, refresh };
+  const remove = useCallback(
+    (logId: string) => {
+      deleteLog(childId, logId);
+      refresh();
+    },
+    [childId, refresh],
+  );
+
+  return { logs, summary, save, remove, refresh };
 }

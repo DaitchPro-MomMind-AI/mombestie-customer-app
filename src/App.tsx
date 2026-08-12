@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import type { JSX } from 'react'
-import { AI_SELF_DISCLOSURE, DEMO_CHILD_ID, HEALTH_DISCLAIMER, buildTimeline, needsHealthDisclaimer, useTrackingLogs } from './services'
+import { AI_SELF_DISCLOSURE, DEMO_CHILD_ID, HEALTH_DISCLAIMER, PLANNER_CATEGORY_TO_LOG_TYPE, buildTimeline, detectCountry, formatPrice, needsHealthDisclaimer, planPrice, reconcilePlanner, useTrackingLogs } from './services'
 import type { NewTrackingLog } from './services'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -392,6 +392,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [cardCvc, setCardCvc] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Country-config-driven pricing — see docs/ARCHITECTURE.md §7.1/§7.2. Same
+  // mechanism and same reference numbers as apps/website/src/i18n.ts.
+  const [country] = useState(() => detectCountry())
+  const plusPrice = formatPrice(country, country.plusMonthly)
 
   const formatCard = (v: string) =>
     v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
@@ -612,7 +616,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
             <div className="flex items-center gap-2 px-4 py-1.5 rounded-full"
               style={{ background: '#FEF3CD', border: '2px solid #F8C85E' }}>
               <span className="text-xs">⏰</span>
-              <span className="text-xs font-bold text-[#B8860B]">7-Day Free Trial · Then $14.99/mo</span>
+              <span className="text-xs font-bold text-[#B8860B]">7-Day Free Trial · Then {plusPrice}/mo</span>
             </div>
           </div>
 
@@ -637,7 +641,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
               <p className="text-[11.5px] text-[#555] leading-relaxed">
                 💳 <span className="font-semibold text-[#242424]">Credit card required.</span>{' '}
                 No charge today — auto-renews at{' '}
-                <span className="font-semibold text-[#EE674E]">$14.99/mo</span> after 7 days unless cancelled.
+                <span className="font-semibold text-[#EE674E]">{plusPrice}/mo</span> after 7 days unless cancelled.
               </p>
             </div>
           </div>
@@ -888,7 +892,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
             <div className="bg-white/80 px-4 divide-y divide-[#F6EDE8]">
               {[
                 { icon: '✅', text: 'Today — Trial starts', right: '$0.00' },
-                { icon: '📅', text: 'Day 7 — Auto-renews', right: '$14.99/mo', warn: true },
+                { icon: '📅', text: 'Day 7 — Auto-renews', right: `${plusPrice}/mo`, warn: true },
                 { icon: '❌', text: 'Cancel before day 7', right: 'No charge' },
               ].map((row, i) => (
                 <div key={i} className="flex items-center justify-between py-2.5 gap-3">
@@ -968,7 +972,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         {/* Fine print */}
         <p className="text-[10px] text-[#6E6E73] text-center mt-3 leading-relaxed px-2">
           By starting your trial you authorise MomMind to charge{' '}
-          <span className="font-semibold text-[#242424]">$14.99/month</span> automatically after your 7-day free trial
+          <span className="font-semibold text-[#242424]">{plusPrice}/month</span> automatically after your 7-day free trial
           unless you cancel before the trial period ends. You can cancel anytime in{' '}
           <span className="text-[#EE674E]">Settings → Subscription</span>.
         </p>
@@ -1893,11 +1897,39 @@ function VoiceScreen({ onClose }: { onClose: () => void }) {
 
 // ─── PLANNER SCREEN ───────────────────────────────────────────────────────────
 function PlannerScreen() {
-  const [completed, setCompleted] = useState<number[]>([0, 1])
+  // Feeding/Meal/Sleep slots reconcile against real TrackingLogs (nearest
+  // match within 90 min) instead of a disconnected local checkbox — see
+  // src/services/plannerReconcile.ts. Activity/Appointment/Routine and any
+  // `predicted` slot stay local-only toggles; there's no service for those yet.
+  const { logs, save, remove } = useTrackingLogs(DEMO_CHILD_ID)
+  const reconciled = reconcilePlanner(plannerItems, logs)
+  const [manualDone, setManualDone] = useState<Set<number>>(new Set())
   const sections = ['Morning', 'Afternoon', 'Evening'] as const
 
-  const toggle = (i: number) =>
-    setCompleted(c => c.includes(i) ? c.filter(x => x !== i) : [...c, i])
+  const completed = [...new Set([...manualDone, ...reconciled.keys()])]
+
+  const toggle = (i: number) => {
+    const item = plannerItems[i]
+    const logType = !item.predicted ? PLANNER_CATEGORY_TO_LOG_TYPE[item.cat] : undefined
+
+    if (!logType) {
+      setManualDone(s => {
+        const next = new Set(s)
+        next.has(i) ? next.delete(i) : next.add(i)
+        return next
+      })
+      return
+    }
+
+    const existing = reconciled.get(i)
+    if (existing) {
+      remove(existing.id)
+      return
+    }
+    if (logType === 'Feed') save({ type: 'Feed', feed: { amountOz: 5, method: 'Bottle' } })
+    else if (logType === 'Meal') save({ type: 'Meal', meal: { foods: [item.label] } })
+    else if (logType === 'Sleep') save({ type: 'Sleep', sleep: { durationSec: 0 } })
+  }
 
   return (
     <div className="scroll-area flex-1 px-4 pt-2 pb-4 slide-up">
@@ -5190,21 +5222,24 @@ function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
   const [activePlan, setActivePlan] = useState<string>('Free')
   const [trialPlan, setTrialPlan] = useState<{ name: string; price: string } | null>(null)
+  // Country-config-driven pricing — see docs/ARCHITECTURE.md §7.1/§7.2. Same
+  // mechanism and same reference numbers as apps/website/src/i18n.ts.
+  const [country] = useState(() => detectCountry())
 
   const plans = [
     {
-      id: 'free', name: 'Free', price: '$0', period: 'forever', color: '#6E6E73', accent: '#F0E8E4',
+      id: 'free', name: 'Free', price: `${country.symbol}0`, period: 'forever', color: '#6E6E73', accent: '#F0E8E4',
       features: ['1 child', 'Core tracking', 'Basic summary', 'Limited AI (5/day)', 'Marketplace browsing'],
       cta: 'Current Plan', highlight: false, badge: null, trial: false,
     },
     {
-      id: 'plus', name: 'MomMind Plus', price: billing === 'monthly' ? '$14.99' : '$12.50',
+      id: 'plus', name: 'MomMind Plus', price: planPrice(country, 'plus', billing),
       period: billing === 'monthly' ? '/month' : '/month (billed annually)', color: '#EE674E', accent: '#FFD6C9',
       features: ['Everything in Free', 'Unlimited AI assistant', 'AI Voice logging', 'BabyPredict', 'Smart meal planning', 'Development activities', 'Data exports'],
       cta: 'Start Free Trial', highlight: true, badge: 'Most Popular', trial: true,
     },
     {
-      id: 'family', name: 'Family', price: billing === 'monthly' ? '$24.99' : '$20.83',
+      id: 'family', name: 'Family', price: planPrice(country, 'family', billing),
       period: billing === 'monthly' ? '/month' : '/month (billed annually)', color: '#6299D5', accent: '#EBF2FC',
       features: ['Everything in Plus', 'Multiple children', 'Partner & grandparent access', 'Caregiver handoffs', 'Shared tasks', 'Advanced permissions'],
       cta: 'Start Family Plan', highlight: false, badge: null, trial: true,
