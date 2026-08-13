@@ -447,7 +447,7 @@ export function FunDevelopmentSubScreen({ onBack }: { onBack: () => void }) {
             <div className="rounded-2xl px-4 py-6 text-center" style={{ background: '#FFF3EE', border: '1.5px dashed #F6B6A5' }}>
               <p className="text-2xl mb-1">🌱</p>
               <p className="text-sm font-semibold text-[#242424]">No approved activities match these filters yet</p>
-              <p className="text-xs text-[#6E6E73] mt-1">MomMind's activity library is still growing — check back soon, or try a different age range.</p>
+              <p className="text-xs text-[#6E6E73] mt-1">MomBestie's activity library is still growing — check back soon, or try a different age range.</p>
             </div>
           )}
 

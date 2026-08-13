@@ -1,5 +1,6 @@
 {
-  "description": "Streamline project management with intuitive task tracking and collaboration tools designed for teams to enhance productivity and communication.",
+  "title": "MomBestie AI",
+  "description": "MomBestie AI — baby tracking, an AI copilot and voice assistant, routine predictions, and a vetted family services marketplace, built for parents of newborns and toddlers, everywhere.",
   "robots": {
     "index": false
   },

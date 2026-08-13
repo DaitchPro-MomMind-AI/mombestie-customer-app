@@ -167,7 +167,7 @@ export function BabyScreen() {
             <p className="text-[11px] text-[#6E6E73] mt-3">
               {referenceLoaded
                 ? 'Plotted against the selected pediatric growth reference.'
-                : "Percentiles aren't available yet — MomMind hasn't loaded a pediatric growth reference dataset for this measurement type. Measurements are still saved and tracked over time."}
+                : "Percentiles aren't available yet — MomBestie hasn't loaded a pediatric growth reference dataset for this measurement type. Measurements are still saved and tracked over time."}
               {' '}A single measurement can't determine overall health or development — your pediatrician can interpret Maya's growth pattern in the context of her medical history.
             </p>
           </div>

@@ -1,5 +1,5 @@
 PROJECT:
-MomMind AI — Mobile UI/UX Design System and Complete App Experience
+MomBestie AI — Mobile UI/UX Design System and Complete App Experience
 
 PLATFORMS:
 • iOS
@@ -9,7 +9,7 @@ PRODUCT TYPE:
 Enterprise-level AI-powered subscription mobile application for mothers/parents of newborns and toddlers from birth to approximately 3 years old.
 
 PRIMARY PRODUCT VISION:
-MomMind AI should become the mother's intelligent daily operating system for managing her baby/toddler.
+MomBestie AI should become the mother's intelligent daily operating system for managing her baby/toddler.
 
 The product combines:
 • AI Mom Copilot
@@ -78,7 +78,7 @@ DO NOT copy:
 • Typography
 • Components
 
-Create an original MomMind design.
+Create an original MomBestie design.
 
 PRIMARY COLOR DIRECTION:
 
@@ -265,7 +265,7 @@ Large premium glass card.
 
 Title:
 
-MomMind Insight ✨
+MomBestie Insight ✨
 
 Example:
 
@@ -273,7 +273,7 @@ Example:
 
 Buttons:
 
-Ask MomMind
+Ask MomBestie
 View Today
 
 ----------------------------------------------------
@@ -371,7 +371,7 @@ Create a dedicated conversational AI experience.
 
 Header:
 
-MomMind AI
+MomBestie AI
 
 Subtext:
 "Your parenting copilot"
@@ -955,7 +955,7 @@ Create a premium pricing screen.
 
 Headline:
 
-Choose the MomMind plan
+Choose the MomBestie plan
 that grows with your family.
 
 ----------------------------------------------------
@@ -977,7 +977,7 @@ Button:
 Current Plan / Start Free
 
 ----------------------------------------------------
-MOMMIND PLUS
+MOMBESTIE PLUS
 ----------------------------------------------------
 
 $14.99/month
@@ -1002,7 +1002,7 @@ Data exports
 
 CTA:
 
-Start MomMind Plus
+Start MomBestie Plus
 
 Also display annual option:
 
@@ -1012,7 +1012,7 @@ Show:
 "Save compared with monthly"
 
 ----------------------------------------------------
-MOMMIND FAMILY
+MOMBESTIE FAMILY
 ----------------------------------------------------
 
 $24.99/month
@@ -1040,7 +1040,7 @@ Suggested annual option:
 $249.99/year
 
 ----------------------------------------------------
-MOMMIND CONCIERGE
+MOMBESTIE CONCIERGE
 ----------------------------------------------------
 
 Coming Later
@@ -1088,7 +1088,7 @@ Privacy Preferences
 
 AI Memory screen:
 
-"What MomMind remembers"
+"What MomBestie remembers"
 
 Example:
 
@@ -1141,7 +1141,7 @@ Appointments
 Family Activity
 Marketplace
 Shopping/Supplies
-MomMind Insights
+MomBestie Insights
 Marketing
 
 Allow quiet hours.
@@ -1156,7 +1156,7 @@ Example:
 
 BabyPredict
 
-"MomMind is still learning Maya's routine."
+"MomBestie is still learning Maya's routine."
 
 "Keep logging sleep for a few more days and we'll begin showing personalized patterns."
 
@@ -1188,7 +1188,7 @@ When a user asks a potentially serious medical question, visually distinguish it
 
 Example:
 
-"MomMind can't diagnose medical conditions."
+"MomBestie can't diagnose medical conditions."
 
 Provide appropriate next-step guidance.
 
@@ -1505,7 +1505,7 @@ The dashboard should NOT feel crowded.
 Information hierarchy:
 
 1. Baby + greeting
-2. MomMind AI insight
+2. MomBestie AI insight
 3. Next predicted event
 4. Quick logging
 5. Today's timeline
@@ -1521,7 +1521,7 @@ Use progressive disclosure rather than displaying everything simultaneously.
 38. BRAND PERSONALITY
 ====================================================
 
-MomMind should feel:
+MomBestie should feel:
 
 Warm
 Intelligent
@@ -1551,7 +1551,7 @@ Excessive glass effects
 
 The final experience should make a mother feel:
 
-"I don't need to remember everything anymore. MomMind remembers and organizes it for me."
+"I don't need to remember everything anymore. MomBestie remembers and organizes it for me."
 
 The application should feel sophisticated enough to be a serious AI technology product while remaining emotionally warm enough for a mother to trust with information about her child.
 

@@ -148,7 +148,7 @@ export function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
       cta: 'Current Plan', highlight: false, badge: null, trial: false,
     },
     {
-      id: 'plus', name: 'MomMind Plus', price: planPrice(country, 'plus', billing),
+      id: 'plus', name: 'MomBestie Plus', price: planPrice(country, 'plus', billing),
       period: billing === 'monthly' ? '/month' : '/month (billed annually)', color: '#EE674E', accent: '#FFD6C9',
       features: ['Everything in Free', 'Unlimited AI assistant', 'AI Voice logging', 'BabyPredict', 'Smart meal planning', 'Development activities', 'Data exports'],
       cta: 'Start Free Trial', highlight: true, badge: 'Most Popular', trial: true,
@@ -160,7 +160,7 @@ export function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
       cta: 'Start Family Plan', highlight: false, badge: null, trial: true,
     },
     {
-      id: 'custom', name: 'MomMind Pro', price: 'Custom',
+      id: 'custom', name: 'MomBestie Pro', price: 'Custom',
       period: '— tailored pricing', color: '#B0A0F0', accent: '#F0EEF9',
       features: ['Everything in Family', 'Multiple family groups', 'Dedicated account manager', 'White-glove onboarding', 'API access', 'Custom integrations', 'Priority 24/7 support'],
       cta: 'Contact Us', highlight: false, badge: '🌟 Enterprise', trial: false,

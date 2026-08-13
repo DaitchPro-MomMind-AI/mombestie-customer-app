@@ -1,6 +1,6 @@
 /**
  * Reads whether real percentile-calculation data exists yet --
- * `growth_reference_datasets` (mommind-backend migration 20260812000010).
+ * `growth_reference_datasets` (mombestie-backend migration 20260812000010).
  * Every row is currently `loaded=false` (the real WHO LMS statistical
  * tables haven't been imported), so this always returns false today -- the
  * point is the Growth tab asks instead of assuming, so the day someone

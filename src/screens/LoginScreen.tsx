@@ -214,7 +214,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           <div className="pop-in flex items-center gap-2 px-5 py-2 rounded-full mb-5"
             style={{ background: 'rgba(255,255,255,0.88)', border: '2px solid #F6B6A5', boxShadow: '0 3px 0 #F6B6A5' }}>
             <span className="text-base">✨</span>
-            <span className="font-display text-[#EE674E] text-sm tracking-wide">MomMind AI</span>
+            <span className="font-display text-[#EE674E] text-sm tracking-wide">MomBestie AI</span>
           </div>
 
           {/* Illustration — big, centred in top half */}
@@ -543,7 +543,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
                 <div className="flex items-center gap-2">
                   <span className="text-xl">⭐</span>
                   <div>
-                    <p className="font-bold text-sm text-[#242424]">MomMind Plus</p>
+                    <p className="font-bold text-sm text-[#242424]">MomBestie Plus</p>
                     <p className="text-[11px] text-[#6E6E73]">Full access · All features</p>
                   </div>
                 </div>
@@ -651,7 +651,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
         {/* Fine print */}
         <p className="text-[10px] text-[#6E6E73] text-center mt-3 leading-relaxed px-2">
-          By starting your trial you authorise MomMind to charge{' '}
+          By starting your trial you authorise MomBestie to charge{' '}
           <span className="font-semibold text-[#242424]">{plusPrice}/month</span> automatically after your 7-day free trial
           unless you cancel before the trial period ends. You can cancel anytime in{' '}
           <span className="text-[#EE674E]">Settings → Subscription</span>.

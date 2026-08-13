@@ -59,7 +59,7 @@ export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: ()
       { icon: '🗺️', label: 'Explore With Baby', sub: 'Food, shopping & outings nearby', key: 'explore' as MoreSub },
     ]},
     { label: t('section_account'), items: [
-      { icon: '⭐', label: 'MomMind Plus', sub: t('upgrade_plan'), key: 'subscription' as MoreSub, highlight: true },
+      { icon: '⭐', label: 'MomBestie Plus', sub: t('upgrade_plan'), key: 'subscription' as MoreSub, highlight: true },
       { icon: '🔔', label: t('notifications'), sub: t('manage_alerts'), key: 'notifications' as MoreSub },
       { icon: '🔒', label: t('privacy_center'), sub: t('your_family_your_data'), key: 'privacy' as MoreSub },
       { icon: '🛡️', label: t('security'), sub: 'Face ID · 2-step on', key: 'security' as MoreSub },
@@ -74,7 +74,7 @@ export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: ()
         <Avatar size={52} initials="S" bg="#F47B66" />
         <div className="flex-1">
           <p className="font-semibold text-[#242424]">Sarah Mitchell</p>
-          <p className="text-xs text-[#6E6E73]">MomMind Plus · sarah@email.com</p>
+          <p className="text-xs text-[#6E6E73]">MomBestie Plus · sarah@email.com</p>
         </div>
         <div className="w-8 h-8 rounded-xl bg-[#F0E8E4] flex items-center justify-center">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="#6E6E73" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>

@@ -1,6 +1,6 @@
 /**
  * Real Supabase-backed insurance info — `insurance_info` table
- * (mommind-backend migration 20260812000009), owner-only RLS (stricter than
+ * (mombestie-backend migration 20260812000009), owner-only RLS (stricter than
  * every other household table). See docs/ARCHITECTURE.md §14.2/§14.37: this
  * is metadata the parent self-reports for provider-search filtering, never a
  * guarantee of coverage -- the required disclaimer lives with the UI, not

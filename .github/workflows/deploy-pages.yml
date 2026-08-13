@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 
 # Staging deployment -- serves the customer app from
-# https://daitchpro-mommind-ai.github.io/mommind-customer-app/ against the
+# https://daitchpro-mombestie-ai.github.io/mombestie-customer-app/ against the
 # real Supabase backend (project "Mommy's buddy"). VITE_SUPABASE_ANON_KEY is
 # safe to bake into a public client bundle -- Row Level Security is what
 # actually gates access, not secrecy of this key (see backend/README.md).
@@ -32,7 +32,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          FIGMA_PUBLIC_URL: /mommind-customer-app
+          FIGMA_PUBLIC_URL: /mombestie-customer-app
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/configure-pages@v5

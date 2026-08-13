@@ -93,7 +93,7 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
         {/* About & Support */}
         <div className="glass-card rounded-2xl overflow-hidden divide-y" style={{ background: card, borderColor: border }}>
           {[
-            { icon: '⭐', label: t('rate_mommind'), key: 'rate' as const },
+            { icon: '⭐', label: t('rate_mombestie'), key: 'rate' as const },
             { icon: '💬', label: t('send_feedback'), key: 'feedback' as const },
             { icon: '❓', label: t('help_support'), key: 'help' as const },
             { icon: '📄', label: t('terms_privacy'), key: 'terms' as const },
@@ -107,7 +107,7 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
           ))}
         </div>
 
-        <p className="text-center text-[10px]" style={{ color: sub }}>MomMind AI v2.4.1 · Made with ❤️ for moms</p>
+        <p className="text-center text-[10px]" style={{ color: sub }}>MomBestie AI v2.4.1 · Made with ❤️ for moms</p>
       </div>
 
       {/* ── Language Sheet ── */}
@@ -122,7 +122,7 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
 
       {/* ── Rate Sheet ── */}
       {activeSheet === 'rate' && (
-        <SheetWrap title="Rate MomMind" icon="⭐"
+        <SheetWrap title="Rate MomBestie" icon="⭐"
           footer={!ratingDone && <button onClick={() => { if (rating > 0) setRatingDone(true) }} disabled={rating === 0}
             className="action-btn w-full py-3.5 rounded-2xl font-bold text-sm text-white"
             style={rating === 0 ? { background: '#F6B6A5', border: '2px solid #E8A090', boxShadow: '0 3px 0 #E8A090' } : { background: 'linear-gradient(135deg,#EE674E,#F47B66)', border: '2px solid #C94930', boxShadow: '0 4px 0 #C94930' }}>
@@ -132,11 +132,11 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
             <div className="flex flex-col items-center py-8 gap-4">
               <div className="text-5xl pop-in">🎉</div>
               <p className="font-display text-xl" style={{ color: text }}>Thank you!</p>
-              <p className="text-sm text-center" style={{ color: sub }}>Your rating helps other moms discover MomMind.</p>
+              <p className="text-sm text-center" style={{ color: sub }}>Your rating helps other moms discover MomBestie.</p>
               <div className="flex gap-1">{[1,2,3,4,5].map(s => <span key={s} className="text-2xl">{s <= rating ? '⭐' : '☆'}</span>)}</div>
             </div>
           ) : (<>
-            <p className="text-sm text-center font-semibold" style={{ color: text }}>How would you rate MomMind?</p>
+            <p className="text-sm text-center font-semibold" style={{ color: text }}>How would you rate MomBestie?</p>
             <div className="flex justify-center gap-3 py-4">
               {[1,2,3,4,5].map(s => (
                 <button key={s} onClick={() => setRating(s)} className="action-btn text-4xl transition-transform" style={{ transform: s <= rating ? 'scale(1.2)' : 'scale(1)' }}>
@@ -166,7 +166,7 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
             <div className="flex flex-col items-center py-8 gap-4">
               <div className="text-5xl pop-in">💌</div>
               <p className="font-display text-xl" style={{ color: text }}>Feedback received!</p>
-              <p className="text-sm text-center" style={{ color: sub }}>Our team reads every message. Thank you for helping us improve MomMind!</p>
+              <p className="text-sm text-center" style={{ color: sub }}>Our team reads every message. Thank you for helping us improve MomBestie!</p>
             </div>
           ) : (<>
             <p className="text-xs" style={{ color: sub }}>Share your thoughts, suggestions, or report a bug.</p>
@@ -189,9 +189,9 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
           <p className="text-xs" style={{ color: sub }}>Find answers or get in touch with our team.</p>
           {[
             { q: 'How do I add a caregiver?', a: 'Go to More → Family & Caregivers → Invite Caregiver.' },
-            { q: 'How does the AI work?', a: "MomMind's AI learns from your baby's patterns to provide personalised advice." },
+            { q: 'How does the AI work?', a: "MomBestie's AI learns from your baby's patterns to provide personalised advice." },
             { q: 'Is my data private?', a: 'Yes. Visit Privacy Center to manage and control all your data.' },
-            { q: 'How do I cancel my subscription?', a: 'Go to More → MomMind Plus → Manage Subscription.' },
+            { q: 'How do I cancel my subscription?', a: 'Go to More → MomBestie Plus → Manage Subscription.' },
           ].map((item, i) => (
             <div key={i} className="rounded-2xl p-4" style={{ background: iconBg, border: `1px solid ${border}` }}>
               <p className="text-sm font-semibold mb-1" style={{ color: text }}>❓ {item.q}</p>
@@ -200,7 +200,7 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
           ))}
           <div className="rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg,#FFF3EE,#FFD6C9)', border: '1.5px solid #F6B6A5' }}>
             <p className="text-sm font-bold text-[#EE674E] mb-1">Still need help?</p>
-            <p className="text-xs text-[#6E6E73]">Email us at hello@mommind.ai — we reply within 24 hours.</p>
+            <p className="text-xs text-[#6E6E73]">Email us at hello@mombestie.ai — we reply within 24 hours.</p>
           </div>
         </SheetWrap>
       )}
@@ -209,7 +209,7 @@ export function SettingsSubScreen({ onBack, darkMode, setDarkMode }: { onBack: (
       {activeSheet === 'terms' && (
         <SheetWrap title="Terms & Privacy" icon="📄">
           {[
-            { title: '📋 Terms of Service', body: 'By using MomMind, you agree to use the app for personal, non-commercial purposes. We reserve the right to update these terms at any time with notice.' },
+            { title: '📋 Terms of Service', body: 'By using MomBestie, you agree to use the app for personal, non-commercial purposes. We reserve the right to update these terms at any time with notice.' },
             { title: '🔒 Privacy Policy', body: "We collect only what's needed to provide the service. Your data is never sold to third parties. You can export or delete your data at any time from Privacy Center." },
             { title: '🍪 Cookie Policy', body: 'We use essential cookies to keep you signed in. No tracking or advertising cookies are used.' },
             { title: '👶 Child Data', body: "Data about your child is treated with the highest sensitivity. It's stored encrypted and only accessible to you and the family members you invite." },

@@ -1,6 +1,6 @@
 /**
  * Real Supabase-backed Fun & Development activity library — reads the
- * `activities` table added in mommind-backend migration
+ * `activities` table added in mombestie-backend migration
  * 20260812000010_growth_and_activities.sql. Unlike the older, still-mock
  * DevelopmentScreen.tsx (hardcoded 4-item array), this is genuinely
  * data-driven per docs/ARCHITECTURE.md §14.16: the frontend never invents an

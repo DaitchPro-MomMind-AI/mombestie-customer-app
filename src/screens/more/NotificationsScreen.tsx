@@ -11,7 +11,7 @@ export function NotificationsSubScreen({ onBack }: { onBack: () => void }) {
     { icon: '👨‍👩‍👧', label: 'Family Activity', sub: 'When family logs data', on: false },
     { icon: '🛍️', label: 'Marketplace', sub: 'Booking updates', on: true },
     { icon: '📦', label: 'Supply Alerts', sub: 'When stock is low', on: true },
-    { icon: '✨', label: 'MomMind Insights', sub: 'Daily AI summaries', on: true },
+    { icon: '✨', label: 'MomBestie Insights', sub: 'Daily AI summaries', on: true },
     { icon: '📣', label: 'Marketing', sub: 'Tips & promotions', on: false },
   ]
   const [states, setStates] = useState(categories.map(c => c.on))

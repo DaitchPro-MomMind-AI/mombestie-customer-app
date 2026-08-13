@@ -60,7 +60,7 @@ export function AIScreen({ onVoice }: { onVoice: () => void }) {
       {/* Header */}
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl text-[#242424]">MomMind AI</h1>
+          <h1 className="font-display text-xl text-[#242424]">MomBestie AI</h1>
           <p className="text-xs text-[#6E6E73]">Your parenting copilot</p>
         </div>
         <button
@@ -145,7 +145,7 @@ export function AIScreen({ onVoice }: { onVoice: () => void }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send(input)}
-            placeholder="Ask MomMind anything…"
+            placeholder="Ask MomBestie anything…"
             className="flex-1 bg-transparent text-sm text-[#242424] placeholder-[#B0A8A4] outline-none"
           />
           <button
@@ -192,7 +192,7 @@ export function VoiceScreen({ onClose }: { onClose: () => void }) {
     return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
-  const stateLabel = { idle: 'Tap to speak', listening: 'Listening…', thinking: 'Thinking…', speaking: 'MomMind is responding' }
+  const stateLabel = { idle: 'Tap to speak', listening: 'Listening…', thinking: 'Thinking…', speaking: 'MomBestie is responding' }
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col items-center"
@@ -207,7 +207,7 @@ export function VoiceScreen({ onClose }: { onClose: () => void }) {
       <div className="relative z-10 flex items-center justify-between w-full px-5 pt-14 pb-4">
         <div>
           <p className="text-white/80 text-xs font-medium uppercase tracking-wider">Voice Mode</p>
-          <p className="text-white font-semibold">MomMind AI</p>
+          <p className="text-white font-semibold">MomBestie AI</p>
         </div>
         <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -258,7 +258,7 @@ export function VoiceScreen({ onClose }: { onClose: () => void }) {
           )}
           {response && (
             <div className="mt-3 bg-white/30 rounded-2xl px-4 py-2.5 max-w-xs">
-              <p className="text-white/70 text-xs font-medium mb-1">MomMind AI</p>
+              <p className="text-white/70 text-xs font-medium mb-1">MomBestie AI</p>
               <p className="text-white text-sm font-medium">"{response}"</p>
               {disclaimer && (
                 <p className="text-white/80 text-[11px] mt-2 leading-snug">⚕️ {CONSULT_DISCLAIMER}</p>

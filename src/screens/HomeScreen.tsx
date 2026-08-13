@@ -293,7 +293,7 @@ export function HomeScreen({ onVoice, onSignOut, onNavigate }: { onVoice: () => 
                 style={{ background: '#FFF8F4', border: '2px solid #F6B6A5', boxShadow: '0 8px 24px rgba(238,103,78,0.15)' }}>
                 <div className="px-4 py-3 border-b border-[#F6EDE8]">
                   <p className="font-semibold text-sm text-[#242424]">Sarah Mitchell</p>
-                  <p className="text-xs text-[#6E6E73]">MomMind Plus</p>
+                  <p className="text-xs text-[#6E6E73]">MomBestie Plus</p>
                 </div>
                 <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#FFF3EE]"
                   onClick={() => setMenuOpen(false)}>
@@ -337,7 +337,7 @@ export function HomeScreen({ onVoice, onSignOut, onNavigate }: { onVoice: () => 
           style={{ background: 'radial-gradient(circle, #EE674E, transparent)', transform: 'translate(30%, -30%)' }} />
         <div className="flex items-center gap-2 mb-2">
           <div className="w-6 h-6 coral-gradient rounded-full flex items-center justify-center text-white text-xs">✨</div>
-          <span className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide">MomMind Insight</span>
+          <span className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide">MomBestie Insight</span>
         </div>
         <p className="text-[15px] text-[#242424] leading-relaxed font-medium">
           Maya slept 9h 42m last night. Her first nap will likely fall between{' '}
@@ -347,7 +347,7 @@ export function HomeScreen({ onVoice, onSignOut, onNavigate }: { onVoice: () => 
           <button
             onClick={() => onNavigate('ai')}
             className="action-btn flex-1 coral-gradient text-white text-sm font-semibold py-2.5 rounded-xl">
-            Ask MomMind
+            Ask MomBestie
           </button>
           <button
             onClick={() => onNavigate('planner')}
@@ -463,7 +463,7 @@ export function HomeScreen({ onVoice, onSignOut, onNavigate }: { onVoice: () => 
         <div className="w-10 h-10 coral-gradient rounded-xl flex items-center justify-center text-white text-lg">🎙️</div>
         <div className="text-left flex-1">
           <p className="font-semibold text-[#242424] text-sm">Voice Mode</p>
-          <p className="text-xs text-[#6E6E73]">Tap to talk to MomMind</p>
+          <p className="text-xs text-[#6E6E73]">Tap to talk to MomBestie</p>
         </div>
         <div className="w-8 h-8 rounded-full bg-[#FFD6C9] flex items-center justify-center text-[#EE674E]">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" transform="rotate(-90 7 7)"/></svg>

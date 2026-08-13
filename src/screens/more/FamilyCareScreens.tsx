@@ -16,7 +16,7 @@ export function ProfileSubScreen({ onBack }: { onBack: () => void }) {
           </div>
           <div className="text-center">
             <p className="font-semibold text-[#242424]">Sarah Mitchell</p>
-            <span className="text-[10px] px-3 py-1 rounded-full font-semibold text-[#EE674E]" style={{ background: '#FFD6C9' }}>MomMind Plus ⭐</span>
+            <span className="text-[10px] px-3 py-1 rounded-full font-semibold text-[#EE674E]" style={{ background: '#FFD6C9' }}>MomBestie Plus ⭐</span>
           </div>
         </div>
         <div className="glass-card rounded-2xl p-4 space-y-3">
@@ -298,7 +298,7 @@ function InviteSheet({ type, onClose, onSent }: {
 
                   <div className="rounded-2xl px-4 py-3" style={{ background: '#FEF3CD', border: '1.5px solid #F8C85E' }}>
                     <p className="text-xs text-[#7A6010] leading-relaxed">
-                      ⚠️ They'll receive a link to download MomMind and join your family. You can remove access at any time.
+                      ⚠️ They'll receive a link to download MomBestie and join your family. You can remove access at any time.
                     </p>
                   </div>
 

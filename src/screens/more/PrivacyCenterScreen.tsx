@@ -55,13 +55,13 @@ function AIMemorySheet({ onClose }: { onClose: () => void }) {
 
   return (
     <PrivacySheetWrapper title="AI Memory" icon="🧠" iconBg="#FFD6C9" onClose={onClose}>
-      <p className="text-xs text-[#6E6E73]">These are the insights MomMind has learned about your family. You can delete individual memories or clear all at once.</p>
+      <p className="text-xs text-[#6E6E73]">These are the insights MomBestie has learned about your family. You can delete individual memories or clear all at once.</p>
 
       {cleared ? (
         <div className="flex flex-col items-center py-6 gap-3">
           <span className="text-4xl">🧹</span>
           <p className="font-semibold text-sm text-[#242424]">All memories cleared</p>
-          <p className="text-xs text-[#6E6E73]">MomMind will learn fresh from your activity</p>
+          <p className="text-xs text-[#6E6E73]">MomBestie will learn fresh from your activity</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -249,7 +249,7 @@ function ConnectedServicesSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <PrivacySheetWrapper title="Connected Services" icon="🔗" iconBg="#EBF2FC" onClose={onClose}>
-      <p className="text-xs text-[#6E6E73]">Apps and services that have access to your MomMind data. Disconnect any time.</p>
+      <p className="text-xs text-[#6E6E73]">Apps and services that have access to your MomBestie data. Disconnect any time.</p>
       <div className="glass-card rounded-2xl overflow-hidden divide-y divide-[#F0E8E4]">
         {services.map((s, i) => (
           <div key={i}>
@@ -521,7 +521,7 @@ export function PrivacyCenterSubScreen({ onBack }: { onBack: () => void }) {
   const [activeSheet, setActiveSheet] = useState<PrivacySheet>(null)
 
   const rows = [
-    { key: 'ai-memory' as PrivacySheet,   icon: '🧠',      label: 'AI Memory',           sub: 'What MomMind remembers',     danger: false },
+    { key: 'ai-memory' as PrivacySheet,   icon: '🧠',      label: 'AI Memory',           sub: 'What MomBestie remembers',     danger: false },
     { key: 'family-access' as PrivacySheet, icon: '👨‍👩‍👧',  label: 'Family Access',        sub: 'Who can see what',           danger: false },
     { key: 'voice-data' as PrivacySheet,  icon: '🎙️',      label: 'Voice Data',           sub: 'Recording storage · 30 days',danger: false },
     { key: 'connected' as PrivacySheet,   icon: '🔗',      label: 'Connected Services',   sub: '2 services linked',          danger: false },
@@ -538,7 +538,7 @@ export function PrivacyCenterSubScreen({ onBack }: { onBack: () => void }) {
         <div className="glass-card-strong rounded-2xl p-4 text-center" style={{ background: 'linear-gradient(135deg,#FFF3EE,#FFD6C9)' }}>
           <p className="text-3xl mb-2">🔒</p>
           <p className="font-display text-lg text-[#242424]">Your Family. Your Data.</p>
-          <p className="text-xs text-[#6E6E73] mt-1 leading-relaxed">You control everything MomMind knows and stores about your family.</p>
+          <p className="text-xs text-[#6E6E73] mt-1 leading-relaxed">You control everything MomBestie knows and stores about your family.</p>
         </div>
         <div className="glass-card rounded-2xl overflow-hidden divide-y divide-[#F0E8E4]">
           {rows.map((r, i) => (

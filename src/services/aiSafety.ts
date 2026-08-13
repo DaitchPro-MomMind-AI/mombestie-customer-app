@@ -23,7 +23,7 @@ export const HEALTH_DISCLAIMER =
 
 /** Shown once per chat/voice session — see docs/ARCHITECTURE.md §4.1 on why this isn't optional. */
 export const AI_SELF_DISCLOSURE =
-  "Hi, I'm MomMind's AI assistant — I'm here to help with Maya's day. I'll always say when something needs a real doctor."
+  "Hi, I'm MomBestie's AI assistant — I'm here to help with Maya's day. I'll always say when something needs a real doctor."
 
 /**
  * Three-tier medical-safety classification — docs/ARCHITECTURE.md §14.6-14.7.
@@ -52,7 +52,7 @@ export function classifyHealthIntent(text: string): HealthIntentTier {
 /**
  * Never a hardcoded US number — see docs/ARCHITECTURE.md §14.7. `emergencyNumber`
  * comes from the real, live `country_config.emergency_number` column
- * (mommind-backend migration 20260813000001); pass null when it isn't
+ * (mombestie-backend migration 20260813000001); pass null when it isn't
  * configured for the detected country rather than guessing.
  */
 export function urgentSafetyMessage(emergencyNumber: string | null): string {

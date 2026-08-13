@@ -43,9 +43,9 @@ export function ExploreSubScreen({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {/* Ask MomMind */}
+        {/* Ask MomBestie */}
         <div className="glass-card rounded-2xl p-4 space-y-2">
-          <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">Ask MomMind</p>
+          <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">Ask MomBestie</p>
           <div className="flex gap-2">
             <input value={prompt} onChange={e => setPrompt(e.target.value)}
               placeholder="What can I do with my toddler this afternoon?"

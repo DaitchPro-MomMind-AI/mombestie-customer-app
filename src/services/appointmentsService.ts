@@ -1,6 +1,6 @@
 /**
  * Real Supabase-backed unified appointments -- `appointments` table
- * (mommind-backend migration 20260812000009), used by both the Planner
+ * (mombestie-backend migration 20260812000009), used by both the Planner
  * (docs/ARCHITECTURE.md §14.5) and Find Care's "Request Appointment" action.
  * category drives Planner grouping; a household member can read/write their
  * own household's rows via RLS.

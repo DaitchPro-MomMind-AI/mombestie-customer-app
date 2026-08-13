@@ -272,7 +272,7 @@ export function FindCareSubScreen({ onBack }: { onBack: () => void }) {
           )
         })}
 
-        <p className="text-[10px] text-[#B0A8A4] text-center px-4 pt-2">Results reflect only real, license-verified providers who have completed MomMind's admin approval process. We never show unverified or estimated availability.</p>
+        <p className="text-[10px] text-[#B0A8A4] text-center px-4 pt-2">Results reflect only real, license-verified providers who have completed MomBestie's admin approval process. We never show unverified or estimated availability.</p>
       </div>
 
       {selected && (

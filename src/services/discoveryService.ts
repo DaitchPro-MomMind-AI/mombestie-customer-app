@@ -1,7 +1,7 @@
 /**
  * Capability lookups for Find Care and Explore With Baby — reads
  * country_config flags and the local_discovery_sources registry
- * (mommind-backend migration 20260812000011) so the UI can render an honest
+ * (mombestie-backend migration 20260812000011) so the UI can render an honest
  * "not available in your area yet" state instead of ever fabricating a
  * doctor or local business. See docs/ARCHITECTURE.md §14.1/§14.10-14.11.
  */

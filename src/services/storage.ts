@@ -9,7 +9,7 @@
  * component.
  */
 
-const NAMESPACE = "mommind:v1";
+const NAMESPACE = "mombestie:v1";
 
 export function readJSON<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
