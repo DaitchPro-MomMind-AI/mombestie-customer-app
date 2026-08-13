@@ -11,4 +11,7 @@ export * from "./plannerReconcile";
 export * from "./bookingTypes";
 export * from "./bookingService";
 export * from "./useBookings";
+export * from "./activitiesService";
+export * from "./insuranceService";
+export * from "./discoveryService";
 export const DEMO_CHILD_ID = "maya";

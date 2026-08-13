@@ -12,8 +12,11 @@ import { NotificationsSubScreen } from './more/NotificationsScreen'
 import { PrivacyCenterSubScreen } from './more/PrivacyCenterScreen'
 import { SecuritySubScreen } from './more/SecurityScreen'
 import { SettingsSubScreen } from './more/SettingsScreen'
+import { FunDevelopmentSubScreen } from './more/FunDevelopmentScreen'
+import { FindCareSubScreen } from './more/FindCareScreen'
+import { ExploreSubScreen } from './more/ExploreScreen'
 
-type MoreSub = 'profile' | 'family' | 'handoff' | 'meals' | 'development' | 'supplies' | 'journal' | 'marketplace' | 'subscription' | 'notifications' | 'privacy' | 'security' | 'settings' | null
+type MoreSub = 'profile' | 'family' | 'handoff' | 'meals' | 'development' | 'supplies' | 'journal' | 'marketplace' | 'subscription' | 'notifications' | 'privacy' | 'security' | 'settings' | 'fun' | 'findcare' | 'explore' | null
 
 export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: () => void; darkMode: boolean; setDarkMode: (v: boolean) => void }) {
   const [sub, setSub] = useState<MoreSub>(null)
@@ -31,6 +34,9 @@ export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: ()
   if (sub === 'privacy') return <PrivacyCenterSubScreen onBack={() => setSub(null)} />
   if (sub === 'security') return <SecuritySubScreen onBack={() => setSub(null)} />
   if (sub === 'settings') return <SettingsSubScreen onBack={() => setSub(null)} darkMode={darkMode} setDarkMode={setDarkMode} />
+  if (sub === 'fun') return <FunDevelopmentSubScreen onBack={() => setSub(null)} />
+  if (sub === 'findcare') return <FindCareSubScreen onBack={() => setSub(null)} />
+  if (sub === 'explore') return <ExploreSubScreen onBack={() => setSub(null)} />
 
   const { t } = useLang()
   const sections = [
@@ -46,6 +52,11 @@ export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: ()
     ]},
     { label: t('section_services'), items: [
       { icon: '🛍️', label: t('marketplace'), sub: 'Find family services', key: 'marketplace' as MoreSub },
+    ]},
+    { label: 'Health & Discovery', items: [
+      { icon: '🎉', label: 'Fun & Development', sub: 'Age-based activity library', key: 'fun' as MoreSub },
+      { icon: '🩺', label: 'Find Care', sub: 'Doctors & telehealth near you', key: 'findcare' as MoreSub },
+      { icon: '🗺️', label: 'Explore With Baby', sub: 'Food, shopping & outings nearby', key: 'explore' as MoreSub },
     ]},
     { label: t('section_account'), items: [
       { icon: '⭐', label: 'MomMind Plus', sub: t('upgrade_plan'), key: 'subscription' as MoreSub, highlight: true },

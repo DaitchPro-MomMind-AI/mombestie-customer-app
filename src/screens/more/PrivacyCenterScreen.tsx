@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SubHeader } from '../../components/atoms'
+import { getCurrentHouseholdId, getInsuranceInfo, saveInsuranceInfo, type InsuranceInfo } from '../../services'
+import { detectCountry } from '../../services/countryConfig'
 
-type PrivacySheet = 'ai-memory' | 'family-access' | 'voice-data' | 'connected' | 'download' | 'delete' | null
+type PrivacySheet = 'ai-memory' | 'family-access' | 'voice-data' | 'connected' | 'download' | 'delete' | 'insurance' | null
 
 function PrivacySheetWrapper({ title, icon, iconBg, onClose, children, footer }: {
   title: string; icon: string; iconBg: string; onClose: () => void
@@ -431,6 +433,90 @@ function DeleteDataSheet({ onClose }: { onClose: () => void }) {
 }
 
 
+function InsuranceSheet({ onClose }: { onClose: () => void }) {
+  const [householdId, setHouseholdId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [insurer, setInsurer] = useState('')
+  const [plan, setPlan] = useState('')
+  const [network, setNetwork] = useState('')
+  const [memberId, setMemberId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    getCurrentHouseholdId().then(async id => {
+      setHouseholdId(id)
+      if (id) {
+        const info = await getInsuranceInfo(id)
+        if (info) {
+          setInsurer(info.insurer_name); setPlan(info.plan_name ?? ''); setNetwork(info.network_name ?? ''); setMemberId(info.member_id ?? '')
+        }
+      }
+      setLoading(false)
+    })
+  }, [])
+
+  const handleSave = async () => {
+    if (!householdId || !insurer.trim()) return
+    setSaving(true)
+    const info: InsuranceInfo = {
+      insurer_name: insurer.trim(), plan_name: plan.trim() || null,
+      network_name: network.trim() || null, member_id: memberId.trim() || null,
+      country: detectCountry().code,
+    }
+    const ok = await saveInsuranceInfo(householdId, info)
+    setSaving(false)
+    if (ok) setSaved(true)
+  }
+
+  return (
+    <PrivacySheetWrapper title="Insurance" icon="🏥" iconBg="#EBF2FC" onClose={onClose}>
+      {loading ? (
+        <div className="text-center py-8"><span className="w-6 h-6 rounded-full border-2 border-[#F0E8E4] border-t-[#6299D5] inline-block spin-slow" /></div>
+      ) : !householdId ? (
+        <div className="rounded-2xl px-4 py-6 text-center" style={{ background: '#F0E8E4' }}>
+          <p className="text-sm text-[#6E6E73]">Sign in with a real account to save insurance info.</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-[#6E6E73] leading-relaxed">Used only to help filter Find Care results — never shared with providers or marketplace partners without your explicit action.</p>
+          <div className="rounded-xl px-3.5 py-3" style={{ background: '#FEF3CD', border: '1.5px solid #F8C85E' }}>
+            <p className="text-xs text-[#7A6010]">Insurance network information can change. Please confirm coverage with your insurance company and healthcare provider before receiving care.</p>
+          </div>
+          <div className="space-y-2.5">
+            <div>
+              <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-1">Insurer *</p>
+              <input value={insurer} onChange={e => setInsurer(e.target.value)} placeholder="e.g. Blue Cross Blue Shield"
+                className="cartoon-input w-full px-3.5 py-2.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-1">Plan</p>
+              <input value={plan} onChange={e => setPlan(e.target.value)} placeholder="e.g. PPO Gold"
+                className="cartoon-input w-full px-3.5 py-2.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-1">Network</p>
+              <input value={network} onChange={e => setNetwork(e.target.value)} placeholder="e.g. In-Network Regional"
+                className="cartoon-input w-full px-3.5 py-2.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-1">Member ID <span className="font-normal normal-case text-[#B0A8A4]">(optional)</span></p>
+              <input value={memberId} onChange={e => setMemberId(e.target.value)} placeholder="Member ID"
+                className="cartoon-input w-full px-3.5 py-2.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
+            </div>
+          </div>
+          <button onClick={handleSave} disabled={!insurer.trim() || saving}
+            className="action-btn w-full py-3.5 rounded-2xl font-bold text-sm text-white"
+            style={{ background: !insurer.trim() ? '#B8C8E0' : 'linear-gradient(135deg,#6299D5,#7FB0E8)', border: '2px solid #3D6FA8', boxShadow: '0 4px 0 #3D6FA8' }}>
+            {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Insurance Info'}
+          </button>
+        </>
+      )}
+    </PrivacySheetWrapper>
+  )
+}
+
+
 export function PrivacyCenterSubScreen({ onBack }: { onBack: () => void }) {
   const [activeSheet, setActiveSheet] = useState<PrivacySheet>(null)
 
@@ -439,6 +525,7 @@ export function PrivacyCenterSubScreen({ onBack }: { onBack: () => void }) {
     { key: 'family-access' as PrivacySheet, icon: '👨‍👩‍👧',  label: 'Family Access',        sub: 'Who can see what',           danger: false },
     { key: 'voice-data' as PrivacySheet,  icon: '🎙️',      label: 'Voice Data',           sub: 'Recording storage · 30 days',danger: false },
     { key: 'connected' as PrivacySheet,   icon: '🔗',      label: 'Connected Services',   sub: '2 services linked',          danger: false },
+    { key: 'insurance' as PrivacySheet,   icon: '🏥',      label: 'Insurance',            sub: 'For Find Care filtering',    danger: false },
     { key: 'download' as PrivacySheet,    icon: '⬇️',      label: 'Download My Data',     sub: 'Full export as JSON/CSV',    danger: false },
     { key: 'delete' as PrivacySheet,      icon: '🗑️',      label: 'Delete My Data',       sub: 'Permanently remove all data',danger: true  },
   ]
@@ -474,6 +561,7 @@ export function PrivacyCenterSubScreen({ onBack }: { onBack: () => void }) {
     {activeSheet === 'family-access' && <FamilyAccessSheet     onClose={() => setActiveSheet(null)} />}
     {activeSheet === 'voice-data'    && <VoiceDataSheet        onClose={() => setActiveSheet(null)} />}
     {activeSheet === 'connected'     && <ConnectedServicesSheet onClose={() => setActiveSheet(null)} />}
+    {activeSheet === 'insurance'     && <InsuranceSheet         onClose={() => setActiveSheet(null)} />}
     {activeSheet === 'download'      && <DownloadDataSheet     onClose={() => setActiveSheet(null)} />}
     {activeSheet === 'delete'        && <DeleteDataSheet       onClose={() => setActiveSheet(null)} />}
     </>

@@ -44,6 +44,27 @@ export async function getCurrentUser() {
 }
 
 /**
+ * Resolves the signed-in user's household id, or null if there's no real
+ * Supabase session (not configured, or genuinely signed out). Used by the
+ * newer feature services (activitiesService, insuranceService) that need a
+ * real household to scope writes to -- they degrade to a "sign in to use
+ * this" state rather than silently falling back to localStorage, since
+ * pretending a save succeeded when nothing was actually persisted is exactly
+ * the class of bug this project has been fixing all session.
+ */
+export async function getCurrentHouseholdId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return null;
+  const { data } = await supabase
+    .from("households")
+    .select("id")
+    .eq("primary_user_id", userData.user.id)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+/**
  * Creates the signed-in user's household row if they don't have one yet.
  * Idempotent (checks first) -- safe to call on every sign-in, not just the
  * first one, so a user who never got past email confirmation on signup
