@@ -23,6 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # This repo tracks *.jar (and other binaries) via Git LFS -- the
+          # Gradle wrapper jar is one of them. Without this, checkout leaves
+          # LFS pointer text files in place of the real binaries and Gradle
+          # fails with "Invalid or corrupt jarfile".
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
