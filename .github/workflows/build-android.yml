@@ -1,0 +1,50 @@
+name: Build Android app
+
+# Builds the real native Customer app (Capacitor-wrapped, see
+# capacitor.config.ts) as a debug APK you can install on a phone to test.
+# This is a *debug* build for testing only -- it is not signed for the Play
+# Store. Play Store release builds need a real signing keystore, which must
+# be added as repo secrets before that step can run (see
+# docs/ARCHITECTURE.md native-app section).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "capacitor.config.ts"
+      - "android/**"
+      - "package.json"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      # No FIGMA_PUBLIC_URL here on purpose -- that env var only applies to
+      # the separate GitHub Pages web build. Native builds serve from the
+      # device's local asset root, so the base path must stay '/'.
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      - run: npx cap sync android
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mombestie-customer-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
