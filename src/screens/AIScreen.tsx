@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { AI_SELF_DISCLOSURE, HEALTH_DISCLAIMER, needsHealthDisclaimer } from '../services'
+import { AI_SELF_DISCLOSURE, CONSULT_DISCLAIMER, classifyHealthIntent, urgentSafetyMessage, getCountryCapabilities } from '../services'
 
-const chatHistory: { role: 'ai' | 'user'; text: string; disclaimer?: boolean }[] = [
+const chatHistory: { role: 'ai' | 'user'; text: string; tier?: 'consult' | 'urgent' }[] = [
   { role: 'ai', text: AI_SELF_DISCLOSURE },
 ]
 
@@ -18,6 +18,8 @@ export function AIScreen({ onVoice }: { onVoice: () => void }) {
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [emergencyNumber, setEmergencyNumber] = useState<string | null>(null)
+  useEffect(() => { getCountryCapabilities().then(c => setEmergencyNumber(c?.emergencyNumber ?? null)) }, [])
 
   const aiReplies: Record<string, string> = {
     'How was last night?': 'Last night was great! Maya slept from 7:52 PM to 7:34 AM — a total of 9h 42m. That\'s 18 minutes longer than her 7-day average. No wake-ups recorded. 🌙',
@@ -33,12 +35,18 @@ export function AIScreen({ onVoice }: { onVoice: () => void }) {
     setInput('')
     setThinking(true)
     setTimeout(() => {
-      const reply = aiReplies[text] || 'I\'ll look into that for you. Based on Maya\'s recent patterns, I\'ll have a detailed answer ready in a moment!'
       // Client-side stand-in for the real AI Gateway safety classifier — see
-      // docs/ARCHITECTURE.md §4.1. Flags the message so the UI can render the
-      // doctor-consult disclaimer distinctly rather than burying it in the reply text.
-      const disclaimer = needsHealthDisclaimer(text) || needsHealthDisclaimer(reply)
-      setMessages(m => [...m, { role: 'ai', text: reply, disclaimer }])
+      // docs/ARCHITECTURE.md §14.6-14.7. Urgent-tier language short-circuits
+      // the canned reply entirely rather than continuing a normal
+      // conversation — prioritizing real help over being helpful.
+      const tier = classifyHealthIntent(text)
+      if (tier === 'urgent') {
+        setMessages(m => [...m, { role: 'ai', text: urgentSafetyMessage(emergencyNumber), tier: 'urgent' }])
+        setThinking(false)
+        return
+      }
+      const reply = aiReplies[text] || 'I\'ll look into that for you. Based on Maya\'s recent patterns, I\'ll have a detailed answer ready in a moment!'
+      setMessages(m => [...m, { role: 'ai', text: reply, tier: tier === 'consult' ? 'consult' : undefined }])
       setThinking(false)
     }, 1200)
   }
@@ -82,15 +90,19 @@ export function AIScreen({ onVoice }: { onVoice: () => void }) {
                 className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${
                   m.role === 'user'
                     ? 'coral-gradient text-white rounded-br-sm'
-                    : 'glass-card text-[#242424] rounded-bl-sm'
+                    : m.tier === 'urgent'
+                      ? 'text-white rounded-bl-sm'
+                      : 'glass-card text-[#242424] rounded-bl-sm'
                 }`}
+                style={m.tier === 'urgent' ? { background: 'linear-gradient(135deg,#D9534F,#EE674E)', border: '2px solid #B03030' } : undefined}
               >
+                {m.tier === 'urgent' && <span className="block font-bold mb-1">🚨 Please seek help now</span>}
                 {m.text}
               </div>
-              {m.disclaimer && (
+              {m.tier === 'consult' && (
                 <div className="flex items-start gap-1.5 mt-1.5 px-1">
                   <span className="text-xs mt-0.5">⚕️</span>
-                  <p className="text-[11px] text-[#B0806E] leading-snug">{HEALTH_DISCLAIMER}</p>
+                  <p className="text-[11px] text-[#B0806E] leading-snug">{CONSULT_DISCLAIMER}</p>
                 </div>
               )}
             </div>
@@ -173,7 +185,7 @@ export function VoiceScreen({ onClose }: { onClose: () => void }) {
     }, 2600 + 2200)
     const t2 = setTimeout(() => {
       const reply = 'Got it. I logged a 5 oz bottle for Maya at 2:15 PM.'
-      setDisclaimer(needsHealthDisclaimer('Maya just drank five ounces.') || needsHealthDisclaimer(reply))
+      setDisclaimer(classifyHealthIntent('Maya just drank five ounces.') !== 'routine')
       setResponse(reply)
       setState('speaking')
     }, 2600 + 3800)
@@ -249,7 +261,7 @@ export function VoiceScreen({ onClose }: { onClose: () => void }) {
               <p className="text-white/70 text-xs font-medium mb-1">MomMind AI</p>
               <p className="text-white text-sm font-medium">"{response}"</p>
               {disclaimer && (
-                <p className="text-white/80 text-[11px] mt-2 leading-snug">⚕️ {HEALTH_DISCLAIMER}</p>
+                <p className="text-white/80 text-[11px] mt-2 leading-snug">⚕️ {CONSULT_DISCLAIMER}</p>
               )}
             </div>
           )}

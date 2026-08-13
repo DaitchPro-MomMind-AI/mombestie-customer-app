@@ -16,6 +16,8 @@ export interface CountryCapabilities {
   localDiscoveryEnabled: boolean;
   telehealthEnabled: boolean;
   doctorDirectorySource: string | null;
+  /** Real, sourced national emergency number for this country -- null means not yet configured, never guess/default to a US number (docs/ARCHITECTURE.md §14.7). */
+  emergencyNumber: string | null;
 }
 
 const FALLBACK: CountryCapabilities = {
@@ -26,6 +28,7 @@ const FALLBACK: CountryCapabilities = {
   localDiscoveryEnabled: false,
   telehealthEnabled: false,
   doctorDirectorySource: null,
+  emergencyNumber: null,
 };
 
 /** null distinguishes "couldn't check" (no backend configured) from a real, checked "disabled" result -- the two need different UI copy. */
@@ -35,7 +38,7 @@ export async function getCountryCapabilities(): Promise<CountryCapabilities | nu
   const { data, error } = await supabase
     .from("country_config")
     .select(
-      "country_code,country_name,healthcare_booking_enabled,insurance_matching_enabled,local_discovery_enabled,telehealth_enabled,doctor_directory_source"
+      "country_code,country_name,healthcare_booking_enabled,insurance_matching_enabled,local_discovery_enabled,telehealth_enabled,doctor_directory_source,emergency_number"
     )
     .eq("country_code", code)
     .maybeSingle();
@@ -51,6 +54,7 @@ export async function getCountryCapabilities(): Promise<CountryCapabilities | nu
     localDiscoveryEnabled: data.local_discovery_enabled,
     telehealthEnabled: data.telehealth_enabled,
     doctorDirectorySource: data.doctor_directory_source,
+    emergencyNumber: data.emergency_number ?? null,
   };
 }
 

@@ -1,5 +1,65 @@
-import { useState } from 'react'
-import { DEMO_CHILD_ID, PLANNER_CATEGORY_TO_LOG_TYPE, reconcilePlanner, useTrackingLogs } from '../services'
+import { useEffect, useState } from 'react'
+import {
+  DEMO_CHILD_ID, PLANNER_CATEGORY_TO_LOG_TYPE, reconcilePlanner, useTrackingLogs,
+  getCurrentHouseholdId, listUpcomingAppointments, cancelAppointment, type Appointment,
+} from '../services'
+
+const CATEGORY_META: Record<Appointment['category'], { icon: string; label: string; color: string }> = {
+  medical: { icon: '🩺', label: 'Medical', color: '#6299D5' },
+  marketplace_booking: { icon: '🧑‍🍼', label: 'Provider booking', color: '#EE674E' },
+  personal: { icon: '📌', label: 'Personal', color: '#B0A0F0' },
+  development: { icon: '🎉', label: 'Development', color: '#55A67A' },
+  family_task: { icon: '🏠', label: 'Family task', color: '#F8C85E' },
+}
+
+/**
+ * Real appointments (docs/ARCHITECTURE.md §14.5) grouped by category --
+ * separate from the local plannerItems slots below, which stay untouched.
+ * This is additive, not a replacement: plannerItems models a recurring daily
+ * routine, appointments models one-off scheduled events (medical visits,
+ * confirmed marketplace bookings, etc.) from the real `appointments` table.
+ */
+function UpcomingAppointments() {
+  const [householdId, setHouseholdId] = useState<string | null>(null)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const refresh = (hhId: string) => listUpcomingAppointments(hhId).then(a => { setAppointments(a); setLoading(false) })
+
+  useEffect(() => {
+    getCurrentHouseholdId().then(id => {
+      setHouseholdId(id)
+      if (id) refresh(id); else setLoading(false)
+    })
+  }, [])
+
+  if (!householdId || (!loading && appointments.length === 0)) return null
+
+  return (
+    <div className="mb-5">
+      <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider mb-2">Upcoming Appointments</p>
+      <div className="space-y-2">
+        {loading ? (
+          <div className="text-center py-3"><span className="w-5 h-5 rounded-full border-2 border-[#F0E8E4] border-t-[#EE674E] inline-block spin-slow" /></div>
+        ) : appointments.map(a => {
+          const meta = CATEGORY_META[a.category]
+          const when = new Date(a.scheduled_at)
+          return (
+            <div key={a.id} className="glass-card rounded-xl p-3 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style={{ background: `${meta.color}22` }}>{meta.icon}</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#242424]">{a.title}</p>
+                <p className="text-[11px] text-[#6E6E73]">{meta.label} · {when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, {when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</p>
+              </div>
+              <button onClick={async () => { await cancelAppointment(a.id); refresh(householdId) }}
+                className="action-btn text-[11px] font-semibold text-[#D9534F] px-2 py-1 flex-shrink-0">Cancel</button>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 const plannerItems = [
   { time: '7:25 AM', label: 'Bottle feed', icon: '🍼', cat: 'Feeding', color: '#6299D5', done: true, section: 'Morning' },
@@ -81,6 +141,8 @@ export function PlannerScreen() {
         </div>
         <button className="ml-auto w-8 h-8 rounded-xl bg-[#FFD6C9] flex items-center justify-center text-[#EE674E] text-sm">+</button>
       </div>
+
+      <UpcomingAppointments />
 
       {sections.map(section => {
         const items = plannerItems.filter(p => p.section === section)

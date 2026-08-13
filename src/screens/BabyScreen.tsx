@@ -1,11 +1,41 @@
-import { useState } from 'react'
-import { DEMO_CHILD_ID, buildTimeline, useTrackingLogs } from '../services'
+import { useEffect, useState } from 'react'
+import { DEMO_CHILD_ID, buildTimeline, useTrackingLogs, isAnyGrowthReferenceLoaded } from '../services'
+
+const kgToLb = (kg: number) => kg * 2.20462
+const lbToKg = (lb: number) => lb / 2.20462
+const cmToIn = (cm: number) => cm / 2.54
+const inToCm = (inches: number) => inches * 2.54
 
 export function BabyScreen() {
   const [tab, setTab] = useState<'overview' | 'timeline' | 'growth' | 'milestones'>('overview')
-  const { logs, summary } = useTrackingLogs(DEMO_CHILD_ID)
+  const { logs, summary, save } = useTrackingLogs(DEMO_CHILD_ID)
   const babyTimeline = buildTimeline(logs)
   const feedSessions = logs.filter(l => l.type === 'Feed').length
+
+  const growthLogs = logs.filter(l => l.type === 'Growth').slice().sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+  const latestGrowth = growthLogs[0]
+
+  const [referenceLoaded, setReferenceLoaded] = useState(false)
+  useEffect(() => { isAnyGrowthReferenceLoaded().then(setReferenceLoaded) }, [])
+
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lb'>('kg')
+  const [heightUnit, setHeightUnit] = useState<'cm' | 'in'>('cm')
+  const [showGrowthForm, setShowGrowthForm] = useState(false)
+  const [weightInput, setWeightInput] = useState('')
+  const [heightInput, setHeightInput] = useState('')
+  const [headInput, setHeadInput] = useState('')
+
+  const logGrowth = () => {
+    const weightKg = weightInput ? (weightUnit === 'kg' ? parseFloat(weightInput) : lbToKg(parseFloat(weightInput))) : undefined
+    const heightCm = heightInput ? (heightUnit === 'cm' ? parseFloat(heightInput) : inToCm(parseFloat(heightInput))) : undefined
+    const headCm = headInput ? (heightUnit === 'cm' ? parseFloat(headInput) : inToCm(parseFloat(headInput))) : undefined
+    if (weightKg == null && heightCm == null && headCm == null) return
+    save({ type: 'Growth', growth: { weightKg, heightCm, headCm } })
+    setWeightInput(''); setHeightInput(''); setHeadInput(''); setShowGrowthForm(false)
+  }
+
+  const displayWeight = (kg: number) => weightUnit === 'kg' ? `${kg.toFixed(1)} kg` : `${kgToLb(kg).toFixed(1)} lb`
+  const displayHeight = (cm: number) => heightUnit === 'cm' ? `${cm.toFixed(1)} cm` : `${cmToIn(cm).toFixed(1)} in`
 
   const milestones = [
     { icon: '😊', label: 'First Smile', date: 'March 14', done: true },
@@ -20,8 +50,12 @@ export function BabyScreen() {
     { icon: '🍼', label: 'Feeding', value: `${feedSessions} sessions`, sub: `${summary.milkOz} oz total`, color: '#6299D5' },
     { icon: '🥣', label: 'Meals', value: `${summary.meals} meals`, sub: summary.meals > 0 ? 'Logged today' : 'None yet', color: '#55A67A' },
     { icon: '🧷', label: 'Diapers', value: `${summary.diapers} changes`, sub: 'Today', color: '#F47B66' },
-    // Growth/Development aren't aggregated from logs yet — see docs/ARCHITECTURE.md NEXT list.
-    { icon: '📏', label: 'Growth', value: '68 cm · 7.2 kg', sub: 'Last measured', color: '#F8C85E' },
+    {
+      icon: '📏', label: 'Growth',
+      value: latestGrowth?.growth ? [latestGrowth.growth.heightCm != null && displayHeight(latestGrowth.growth.heightCm), latestGrowth.growth.weightKg != null && displayWeight(latestGrowth.growth.weightKg)].filter(Boolean).join(' · ') : 'Not logged yet',
+      sub: latestGrowth ? new Date(latestGrowth.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Log in Growth tab',
+      color: '#F8C85E',
+    },
     { icon: '🎯', label: 'Development', value: '3 activities', sub: 'This week', color: '#EE674E' },
   ]
 
@@ -105,39 +139,86 @@ export function BabyScreen() {
 
       {tab === 'growth' && (
         <div className="space-y-3">
+          {/* Unit toggles */}
+          <div className="flex gap-2">
+            <div className="flex gap-1 bg-[#F6EDE8] p-1 rounded-lg">
+              {(['kg', 'lb'] as const).map(u => (
+                <button key={u} onClick={() => setWeightUnit(u)} className={`px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase ${weightUnit === u ? 'bg-white text-[#EE674E] shadow-sm' : 'text-[#6E6E73]'}`}>{u}</button>
+              ))}
+            </div>
+            <div className="flex gap-1 bg-[#F6EDE8] p-1 rounded-lg">
+              {(['cm', 'in'] as const).map(u => (
+                <button key={u} onClick={() => setHeightUnit(u)} className={`px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase ${heightUnit === u ? 'bg-white text-[#EE674E] shadow-sm' : 'text-[#6E6E73]'}`}>{u}</button>
+              ))}
+            </div>
+          </div>
+
           <div className="glass-card-strong rounded-2xl p-4">
             <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide mb-3">Current Measurements</p>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Height', value: '68 cm', pct: 62 },
-                { label: 'Weight', value: '7.2 kg', pct: 48 },
-                { label: 'Head', value: '43 cm', pct: 55 },
-                { label: 'BMI', value: 'Healthy', pct: 50 },
-              ].map(m => (
-                <div key={m.label}>
-                  <div className="flex justify-between mb-1.5">
-                    <span className="text-xs text-[#6E6E73]">{m.label}</span>
-                    <span className="text-xs font-semibold text-[#242424]">{m.value}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-[#F0E8E4] overflow-hidden">
-                    <div className="h-full rounded-full coral-gradient" style={{ width: `${m.pct}%` }} />
-                  </div>
-                  <p className="text-[10px] text-[#6E6E73] mt-1">{m.pct}th percentile</p>
-                </div>
-              ))}
-            </div>
+            {latestGrowth?.growth ? (
+              <div className="grid grid-cols-3 gap-4">
+                {latestGrowth.growth.heightCm != null && <div><p className="text-xs text-[#6E6E73] mb-1">Length/Height</p><p className="text-sm font-semibold text-[#242424]">{displayHeight(latestGrowth.growth.heightCm)}</p></div>}
+                {latestGrowth.growth.weightKg != null && <div><p className="text-xs text-[#6E6E73] mb-1">Weight</p><p className="text-sm font-semibold text-[#242424]">{displayWeight(latestGrowth.growth.weightKg)}</p></div>}
+                {latestGrowth.growth.headCm != null && <div><p className="text-xs text-[#6E6E73] mb-1">Head</p><p className="text-sm font-semibold text-[#242424]">{displayHeight(latestGrowth.growth.headCm)}</p></div>}
+              </div>
+            ) : (
+              <p className="text-sm text-[#6E6E73]">No measurements logged yet.</p>
+            )}
+            <p className="text-[11px] text-[#6E6E73] mt-3">
+              {referenceLoaded
+                ? 'Plotted against the selected pediatric growth reference.'
+                : "Percentiles aren't available yet — MomMind hasn't loaded a pediatric growth reference dataset for this measurement type. Measurements are still saved and tracked over time."}
+              {' '}A single measurement can't determine overall health or development — your pediatrician can interpret Maya's growth pattern in the context of her medical history.
+            </p>
           </div>
-          <div className="glass-card rounded-2xl p-4">
-            <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide mb-3">Weight History</p>
-            <div className="flex items-end gap-2 h-16">
-              {[5.1, 5.8, 6.3, 6.7, 7.0, 7.2].map((v, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full rounded-t-md" style={{ height: `${(v / 7.2) * 100}%`, background: i === 5 ? '#EE674E' : '#FFD6C9' }} />
-                  <span className="text-[9px] text-[#6E6E73]">{['2m', '3m', '4m', '5m', '6m', '7m'][i]}</span>
+
+          {!showGrowthForm ? (
+            <button onClick={() => setShowGrowthForm(true)}
+              className="action-btn w-full py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm"
+              style={{ background: '#FFFCFA', border: '2px dashed #F6B6A5', color: '#EE674E' }}>
+              + Log a Measurement
+            </button>
+          ) : (
+            <div className="glass-card rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide">New measurement</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <p className="text-[10px] text-[#6E6E73] mb-1">Weight ({weightUnit})</p>
+                  <input value={weightInput} onChange={e => setWeightInput(e.target.value)} inputMode="decimal" placeholder="0.0" className="cartoon-input w-full px-2.5 py-2 text-sm text-[#242424]" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-[10px] text-[#6E6E73] mb-1">Length ({heightUnit})</p>
+                  <input value={heightInput} onChange={e => setHeightInput(e.target.value)} inputMode="decimal" placeholder="0.0" className="cartoon-input w-full px-2.5 py-2 text-sm text-[#242424]" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#6E6E73] mb-1">Head ({heightUnit})</p>
+                  <input value={headInput} onChange={e => setHeadInput(e.target.value)} inputMode="decimal" placeholder="0.0" className="cartoon-input w-full px-2.5 py-2 text-sm text-[#242424]" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowGrowthForm(false)} className="action-btn flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#6E6E73]" style={{ background: '#F0E8E4' }}>Cancel</button>
+                <button onClick={logGrowth} disabled={!weightInput && !heightInput && !headInput}
+                  className="action-btn flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg,#EE674E,#F47B66)' }}>Save</button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {growthLogs.length > 0 && (
+            <div className="glass-card rounded-2xl p-4">
+              <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide mb-3">History</p>
+              <div className="space-y-2">
+                {growthLogs.map(g => (
+                  <div key={g.id} className="flex items-center justify-between text-sm">
+                    <span className="text-[#6E6E73]">{new Date(g.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span className="text-[#242424]">
+                      {[g.growth?.heightCm != null && displayHeight(g.growth.heightCm), g.growth?.weightKg != null && displayWeight(g.growth.weightKg), g.growth?.headCm != null && `head ${displayHeight(g.growth.headCm)}`].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
