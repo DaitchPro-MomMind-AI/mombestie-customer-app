@@ -611,6 +611,20 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
             <span className="text-[10px] text-[#55A67A] font-semibold">256-bit SSL · Secured by Stripe</span>
           </div>
 
+          {/* No real processor is connected yet (FEATURES.realPayments=false,
+             docs/ARCHITECTURE.md §9) -- these fields aren't validated or sent
+             anywhere, so Continue already works with them empty. This button
+             just fills Stripe's own public test-card number for anyone who
+             wants the screen to look complete while testing. Remove this
+             block entirely once real Stripe Elements replaces these inputs. */}
+          <button
+            type="button"
+            onClick={() => { setCardNumber('4242 4242 4242 4242'); setCardExpiry('12/34'); setCardCvc('123') }}
+            className="action-btn w-full text-center text-[11px] font-semibold text-[#EE674E] underline underline-offset-2"
+          >
+            Fill test card (testing only — no real charge, nothing is sent anywhere)
+          </button>
+
           {/* Start trial button */}
           <button
             onClick={submit}
