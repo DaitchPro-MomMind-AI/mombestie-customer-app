@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { buildTimeline, useTrackingLogs, isAnyGrowthReferenceLoaded } from '../services'
 import { useSelectedChild } from '../selectedChild'
+import { getMilestoneReminders, MILESTONE_SOURCE } from '../services/milestoneReminders'
 
 function ageLabel(birthdate: string): string {
   const birth = new Date(birthdate)
@@ -57,6 +58,12 @@ export function BabyScreen() {
     { icon: '🗣️', label: 'First Word', date: 'Coming soon…', done: false },
     { icon: '🚶', label: 'First Steps', date: 'Coming soon…', done: false },
   ]
+
+  // MBCST-35: real age-based checkpoints computed from the child's real
+  // birthdate, citing a real public source -- distinct from the personal
+  // "firsts" baby-book list above, which is a different, unsourced feature.
+  const checkpoints = selectedChild ? getMilestoneReminders(selectedChild.birthdate) : []
+  const nextCheckpoint = checkpoints.find(c => !c.isPast)
 
   const overviewCards = [
     { icon: '🌙', label: 'Sleep', value: `${Math.floor(summary.sleepMinutes / 60)}h ${summary.sleepMinutes % 60}m`, sub: 'Today', color: '#B0A0F0' },
@@ -270,6 +277,25 @@ export function BabyScreen() {
 
       {tab === 'milestones' && (
         <div className="space-y-3">
+          {selectedChild && (
+            <div className="glass-card-strong rounded-2xl p-4">
+              <p className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide mb-1">Upcoming Checkups & Checkpoints</p>
+              <p className="text-[10px] text-[#6E6E73] mb-3">{MILESTONE_SOURCE.disclaimer}</p>
+              <div className="space-y-2">
+                {checkpoints.map(c => (
+                  <div key={c.monthsOffset} className={`flex items-center justify-between text-sm ${c.isPast ? 'opacity-50' : ''}`}>
+                    <div>
+                      <p className="text-[#242424] font-medium">{c.label}</p>
+                      <p className="text-[10px] text-[#6E6E73]">Source: {c.source}</p>
+                    </div>
+                    <span className={`text-xs flex-shrink-0 ml-2 ${nextCheckpoint === c ? 'text-[#EE674E] font-bold' : 'text-[#6E6E73]'}`}>
+                      {new Date(c.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="glass-card-strong rounded-2xl p-4">
             <p className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide mb-3">{selectedChild?.name ?? 'Maya'}'s Milestones</p>
             <div className="space-y-3">
