@@ -1,23 +1,41 @@
 import { useState, useEffect, useRef } from 'react'
 import { SubHeader } from '../../components/atoms'
-import { DEMO_CHILD_ID, useBookings } from '../../services'
+import { useBookings, getCurrentHouseholdId, supabase } from '../../services'
+import { listApprovedProviders, type PublicProvider } from '../../services/providerDirectoryService'
 
-type Provider = { name: string; role: string; rating: number; reviews: number; price: string; avail: string; verified: boolean; color: string; category: string }
-
-const ALL_PROVIDERS: Provider[] = [
-  { name: 'Jessica M.', role: 'Babysitter',        rating: 4.9, reviews: 127, price: '$24/hr', avail: 'Available Sat',  verified: true,  color: '#EE674E', category: 'Babysitters' },
-  { name: 'Maria L.',   role: 'Nanny',              rating: 5.0, reviews: 84,  price: '$28/hr', avail: 'Available today',verified: true,  color: '#6299D5', category: 'Nannies'     },
-  { name: 'Priya K.',   role: 'Postpartum Support', rating: 4.8, reviews: 56,  price: '$35/hr', avail: 'Available Sun',  verified: true,  color: '#B0A0F0', category: 'Postpartum'  },
-  { name: 'Amy T.',     role: 'House Cleaner',      rating: 4.7, reviews: 203, price: '$22/hr', avail: 'Available Mon',  verified: true,  color: '#55A67A', category: 'Cleaning'    },
-  { name: 'Rosa G.',    role: 'Meal Prep Chef',     rating: 4.9, reviews: 41,  price: '$30/hr', avail: 'Available Wed',  verified: false, color: '#C49B30', category: 'Meal Prep'   },
-  { name: 'Lily S.',    role: 'Baby Photographer',  rating: 5.0, reviews: 88,  price: '$120/session', avail: 'Available Fri', verified: true, color: '#F47B66', category: 'Photography' },
+// Real approved providers (public_providers view) replace the previous
+// ALL_PROVIDERS fixture (six invented names a customer could "book" with
+// nothing written anywhere real). `avail`/`verified`/`color`/`price` are
+// derived below rather than stored -- every row from this view is by
+// definition an approved provider (the view's own comment: "this view only
+// ever reflects real, admin-approved provider rows"), so "✓ Verified" is
+// always accurate here, not a fixture flag.
+const CATEGORY_FILTERS = [
+  { icon: '👶', label: 'Babysitters', match: 'babysit', color: '#EE674E', bg: '#FFD6C9' },
+  { icon: '🏠', label: 'Nannies',     match: 'nanny',   color: '#6299D5', bg: '#EBF2FC' },
+  { icon: '💆', label: 'Postpartum',  match: 'postpartum', color: '#B0A0F0', bg: '#F0EEF9' },
+  { icon: '🧹', label: 'Cleaning',    match: 'clean',   color: '#55A67A', bg: '#E6F4ED' },
+  { icon: '🍳', label: 'Meal Prep',   match: 'meal',    color: '#C49B30', bg: '#FEF7E0' },
+  { icon: '📸', label: 'Photography', match: 'photo',   color: '#F47B66', bg: '#FEEAE6' },
 ]
+const AVATAR_COLORS = ['#EE674E', '#6299D5', '#B0A0F0', '#55A67A', '#C49B30', '#F47B66']
 
+function colorFor(id: string) {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}
 
-function MessageSheet({ provider, onClose }: { provider: Provider; onClose: () => void }) {
+function priceLabel(p: PublicProvider, symbol: string) {
+  if (p.hourly_rate_cents == null) return 'Rate on request'
+  return `${symbol}${(p.hourly_rate_cents / 100).toFixed(0)}/hr`
+}
+
+function MessageSheet({ provider, color, onClose }: { provider: PublicProvider; color: string; onClose: () => void }) {
+  const name = provider.business_name || 'Provider'
   const [input, setInput] = useState('')
   const [msgs, setMsgs] = useState([
-    { from: 'them', text: `Hi! I'm ${provider.name}. How can I help you today?` },
+    { from: 'them', text: `Hi! I'm with ${name}. How can I help you today?` },
   ])
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -29,14 +47,9 @@ function MessageSheet({ provider, onClose }: { provider: Provider; onClose: () =
     setMsgs(m => [...m, { from: 'me', text }])
     setInput('')
     setSending(true)
-    const replies: Record<string, string> = {
-      'What are your hours?': `I'm available Mon–Sat, 7am–9pm. Sundays by arrangement!`,
-      'Are you available this weekend?': `Yes! I have Saturday afternoon free. Want me to pencil you in?`,
-      "What's your experience with infants?": `I have 5+ years with newborns to 12 months. CPR certified and first-aid trained.`,
-    }
     setTimeout(() => {
       setSending(false)
-      setMsgs(m => [...m, { from: 'them', text: replies[text] || `Thanks for your message! I'll get back to you shortly 😊` }])
+      setMsgs(m => [...m, { from: 'them', text: `Thanks for your message! I'll get back to you shortly 😊` }])
     }, 1200)
   }
 
@@ -52,10 +65,10 @@ function MessageSheet({ provider, onClose }: { provider: Provider; onClose: () =
           <div className="w-10 h-1 rounded-full bg-[#E0D8D4] mx-auto mb-3" />
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-lg flex-shrink-0"
-              style={{ background: `linear-gradient(135deg,${provider.color},${provider.color}cc)` }}>{provider.name[0]}</div>
+              style={{ background: `linear-gradient(135deg,${color},${color}cc)` }}>{name[0]}</div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-[#242424]">{provider.name}</p>
-              <p className="text-xs text-[#6E6E73]">{provider.role} · {provider.price}</p>
+              <p className="font-semibold text-sm text-[#242424]">{name}</p>
+              <p className="text-xs text-[#6E6E73]">{provider.categories[0] ?? 'Provider'}</p>
             </div>
             <button onClick={onClose}
               className="action-btn w-8 h-8 rounded-xl flex items-center justify-center"
@@ -63,6 +76,7 @@ function MessageSheet({ provider, onClose }: { provider: Provider; onClose: () =
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="#6E6E73" strokeWidth="1.6" strokeLinecap="round"/></svg>
             </button>
           </div>
+          <p className="mt-2 text-[10px] text-[#B0A8A4]">Messaging isn't wired to a real inbox yet -- these replies are simulated, not from {name}.</p>
         </div>
 
         {/* Messages */}
@@ -114,7 +128,12 @@ function MessageSheet({ provider, onClose }: { provider: Provider; onClose: () =
 }
 
 
-function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClose: () => void; onSave: (input: { providerName: string; providerRole: string; day: string; slot: string; durationHrs: number; note?: string; estTotal: string }) => void }) {
+function BookingSheet({ provider, color, householdId, onClose, onSaved }: {
+  provider: PublicProvider; color: string; householdId: string | null
+  onClose: () => void
+  onSaved: (input: { provider_id: string; provider_name: string; service_category: string; scheduled_at: string; duration_hours: number; price_cents: number; commission_cents: number; currency: string; notes: string | null }) => Promise<{ ok: boolean; error?: string }>
+}) {
+  const name = provider.business_name || 'Provider'
   const days = ['Mon Aug 11','Tue Aug 12','Wed Aug 13','Thu Aug 14','Fri Aug 15','Sat Aug 16','Sun Aug 17']
   const slots = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','2:00 PM','3:00 PM','4:00 PM','6:00 PM']
   const durations = ['2 hrs','3 hrs','4 hrs','6 hrs','8 hrs']
@@ -126,28 +145,48 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
   const [step, setStep] = useState<1|2|3>(1)
   const [booking, setBooking] = useState(false)
   const [booked, setBooked] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currencySymbol, setCurrencySymbol] = useState('$')
+  const [currency, setCurrency] = useState('USD')
+  const [commissionPct, setCommissionPct] = useState(10)
+
+  // Real currency + commission for the provider's own country -- a booking
+  // is denominated in the provider's local currency, matching how
+  // hourly_rate_cents is stored on their real application.
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('country_config').select('currency,currency_symbol,commission_pct').eq('country_code', provider.country).maybeSingle()
+      .then(({ data }) => {
+        if (data) { setCurrencySymbol(data.currency_symbol); setCurrency(data.currency); setCommissionPct(data.commission_pct) }
+      })
+  }, [provider.country])
 
   const canNext = selDay && selSlot
   const hrs = parseInt(selDur)
-  // provider.price is like "$24/hr" — parseInt() chokes on the leading "$"
-  // and silently returns NaN, which used to only ever be displayed (never
-  // persisted, so the bug was invisible). Strip to digits first.
-  const hourlyRate = parseInt(provider.price.replace(/[^0-9.]/g, '')) || 0
-  const total = selDur ? `$${hourlyRate * hrs}` : '—'
+  const hourlyRateCents = provider.hourly_rate_cents ?? 0
+  const priceCents = hourlyRateCents * hrs
+  const commissionCents = Math.round(priceCents * (commissionPct / 100))
+  const total = selDur ? `${currencySymbol}${(priceCents / 100).toFixed(0)}` : '—'
 
-  const handleBook = () => {
-    setBooking(true)
-    setTimeout(() => {
-      setBooking(false)
-      setBooked(true)
-      // Real persisted write — see docs/ARCHITECTURE.md §6/§13. Marketplace
-      // is still mock (no live availability, no payment capture), but the
-      // request itself is no longer thrown away.
-      onSave({
-        providerName: provider.name, providerRole: provider.role,
-        day: selDay!, slot: selSlot!, durationHrs: hrs, note: note || undefined, estTotal: total,
-      })
-    }, 1400)
+  const handleBook = async () => {
+    if (!householdId) { setError('No household on this account yet -- try signing out and back in.'); return }
+    setBooking(true); setError(null)
+    // No real per-slot calendar exists yet (docs -- FEATURES.liveMarketplace
+    // comment), so the picked day/slot is folded into a plausible ISO
+    // timestamp for storage; it's a real row, just not backed by a real
+    // per-provider availability engine yet.
+    const scheduledAt = new Date()
+    scheduledAt.setDate(scheduledAt.getDate() + days.indexOf(selDay!) + 1)
+    const res = await onSaved({
+      provider_id: provider.id, provider_name: name,
+      service_category: provider.categories[0] ?? 'General',
+      scheduled_at: scheduledAt.toISOString(), duration_hours: hrs,
+      price_cents: priceCents, commission_cents: commissionCents, currency,
+      notes: note || null,
+    })
+    setBooking(false)
+    if (!res.ok) { setError(res.error ?? 'Failed to send request.'); return }
+    setBooked(true)
   }
 
   return (
@@ -180,26 +219,32 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
 
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-white text-lg flex-shrink-0"
-              style={{ background: `linear-gradient(135deg,${provider.color},${provider.color}cc)` }}>{provider.name[0]}</div>
+              style={{ background: `linear-gradient(135deg,${color},${color}cc)` }}>{name[0]}</div>
             <div>
               <h3 className="font-display text-lg text-[#242424]">{booked ? 'Booking Confirmed!' : 'Request Booking'}</h3>
-              <p className="text-xs text-[#6E6E73]">{provider.name} · {provider.role} · {provider.price}</p>
+              <p className="text-xs text-[#6E6E73]">{name} · {provider.categories[0] ?? 'Provider'} · {priceLabel(provider, currencySymbol)}</p>
             </div>
           </div>
         </div>
 
         <div className="scroll-area flex-1 px-5 pb-4 space-y-4">
 
+          {error && (
+            <div className="rounded-2xl px-4 py-3" style={{ background: '#FDEDEC', border: '1.5px solid #F5B7B1' }}>
+              <p className="text-xs text-[#B03A2E]">{error}</p>
+            </div>
+          )}
+
           {booked ? (
             <div className="flex flex-col items-center py-8 gap-4">
               <div className="w-20 h-20 rounded-full bg-[#E6F4ED] flex items-center justify-center text-4xl pop-in">🎉</div>
               <div className="text-center">
                 <p className="font-display text-xl text-[#242424]">Request Sent!</p>
-                <p className="text-sm text-[#6E6E73] mt-1">{provider.name} will confirm within 2 hours</p>
+                <p className="text-sm text-[#6E6E73] mt-1">{name} will confirm within 2 hours</p>
               </div>
               <div className="w-full glass-card rounded-2xl p-4 space-y-2.5">
                 {[
-                  { icon: '👤', label: 'Provider', val: provider.name },
+                  { icon: '👤', label: 'Provider', val: name },
                   { icon: '📅', label: 'Date', val: selDay! },
                   { icon: '🕐', label: 'Time', val: selSlot! },
                   { icon: '⏱', label: 'Duration', val: selDur },
@@ -286,7 +331,7 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
             <div>
               <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-1.5">Special instructions <span className="font-normal normal-case text-[#B0A8A4]">(optional)</span></p>
               <textarea value={note} onChange={e => setNote(e.target.value)}
-                placeholder={`Any notes for ${provider.name.split(' ')[0]}? e.g. allergies, routines, gate code…`}
+                placeholder={`Any notes for ${name.split(' ')[0]}? e.g. allergies, routines, gate code…`}
                 rows={3} className="cartoon-input w-full px-4 py-3 text-sm text-[#242424] placeholder-[#C0B8B4] resize-none" />
             </div>
 
@@ -294,7 +339,7 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
             <div className="glass-card rounded-2xl p-4 space-y-2.5">
               <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">Booking summary</p>
               {[
-                { icon: '👤', label: 'Provider', val: `${provider.name} · ${provider.role}` },
+                { icon: '👤', label: 'Provider', val: `${name} · ${provider.categories[0] ?? 'Provider'}` },
                 { icon: '📅', label: 'Date', val: selDay! },
                 { icon: '🕐', label: 'Time', val: selSlot! },
                 { icon: '⏱', label: 'Duration', val: selDur },
@@ -309,7 +354,7 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
             </div>
 
             <div className="rounded-2xl px-4 py-3" style={{ background: '#FEF3CD', border: '1.5px solid #F8C85E' }}>
-              <p className="text-xs text-[#7A6010]">ℹ️ Payment is collected after the session is completed. You can cancel up to 24 hours before.</p>
+              <p className="text-xs text-[#7A6010]">ℹ️ This creates a real booking request the provider can accept or decline in their own portal. Payment isn't captured yet -- no real payment processor is connected.</p>
             </div>
 
           </>) : null}
@@ -338,7 +383,7 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
               className="action-btn flex-1 py-3.5 rounded-2xl font-bold text-sm text-white"
               style={(step === 1 && !canNext) || booking
                 ? { background: '#F6B6A5', border: '2px solid #E8A090', boxShadow: '0 3px 0 #E8A090' }
-                : { background: `linear-gradient(135deg,${provider.color},${provider.color}cc)`, border: `2px solid ${provider.color}99`, boxShadow: `0 4px 0 ${provider.color}66` }}>
+                : { background: `linear-gradient(135deg,${color},${color}cc)`, border: `2px solid ${color}99`, boxShadow: `0 4px 0 ${color}66` }}>
               {booking
                 ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white inline-block spin-slow" />Sending…</span>
                 : step === 1 ? 'Next — Add Details →' : 'Confirm Booking 🎉'}
@@ -354,22 +399,22 @@ function BookingSheet({ provider, onClose, onSave }: { provider: Provider; onClo
 export function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [messageProvider, setMessageProvider] = useState<Provider | null>(null)
-  const [bookingProvider, setBookingProvider] = useState<Provider | null>(null)
-  const { bookings, save: saveBooking } = useBookings(DEMO_CHILD_ID)
+  const [messageProvider, setMessageProvider] = useState<PublicProvider | null>(null)
+  const [bookingProvider, setBookingProvider] = useState<PublicProvider | null>(null)
+  const [providers, setProviders] = useState<PublicProvider[]>([])
+  const [loadingProviders, setLoadingProviders] = useState(true)
+  const [householdId, setHouseholdId] = useState<string | null>(null)
+  const { bookings, save: saveBooking } = useBookings(householdId)
 
-  const categories = [
-    { icon: '👶', label: 'Babysitters', color: '#EE674E', bg: '#FFD6C9' },
-    { icon: '🏠', label: 'Nannies',     color: '#6299D5', bg: '#EBF2FC' },
-    { icon: '💆', label: 'Postpartum',  color: '#B0A0F0', bg: '#F0EEF9' },
-    { icon: '🧹', label: 'Cleaning',    color: '#55A67A', bg: '#E6F4ED' },
-    { icon: '🍳', label: 'Meal Prep',   color: '#C49B30', bg: '#FEF7E0' },
-    { icon: '📸', label: 'Photography', color: '#F47B66', bg: '#FEEAE6' },
-  ]
+  useEffect(() => {
+    listApprovedProviders().then(rows => { setProviders(rows); setLoadingProviders(false) })
+    getCurrentHouseholdId().then(setHouseholdId)
+  }, [])
 
-  const filtered = ALL_PROVIDERS.filter(p => {
-    const matchCat = !activeCategory || p.category === activeCategory
-    const matchQ = !query.trim() || p.name.toLowerCase().includes(query.toLowerCase()) || p.role.toLowerCase().includes(query.toLowerCase())
+  const filtered = providers.filter(p => {
+    const matchCat = !activeCategory || p.categories.some(c => c.toLowerCase().includes(activeCategory))
+    const name = p.business_name ?? ''
+    const matchQ = !query.trim() || name.toLowerCase().includes(query.toLowerCase()) || p.categories.some(c => c.toLowerCase().includes(query.toLowerCase()))
     return matchCat && matchQ
   })
 
@@ -394,15 +439,15 @@ export function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
         <div>
           <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-2">Categories</p>
           <div className="grid grid-cols-3 gap-2">
-            {categories.map((c, i) => (
-              <button key={i} onClick={() => setActiveCategory(activeCategory === c.label ? null : c.label)}
+            {CATEGORY_FILTERS.map((c, i) => (
+              <button key={i} onClick={() => setActiveCategory(activeCategory === c.match ? null : c.match)}
                 className="action-btn py-3.5 rounded-2xl flex flex-col items-center gap-1.5 transition-all"
-                style={activeCategory === c.label
+                style={activeCategory === c.match
                   ? { background: c.bg, border: `2.5px solid ${c.color}`, boxShadow: `0 4px 0 ${c.color}55` }
                   : { background: c.bg, border: `1.5px solid ${c.color}33` }}>
                 <span className="text-2xl">{c.icon}</span>
                 <span className="text-[10px] font-bold text-[#242424]">{c.label}</span>
-                {activeCategory === c.label && <div className="w-1 h-1 rounded-full" style={{ background: c.color }} />}
+                {activeCategory === c.match && <div className="w-1 h-1 rounded-full" style={{ background: c.color }} />}
               </button>
             ))}
           </div>
@@ -410,7 +455,7 @@ export function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
             <button onClick={() => setActiveCategory(null)}
               className="action-btn mt-2 w-full py-2 rounded-xl text-xs font-semibold text-[#6E6E73]"
               style={{ background: '#F0E8E4', border: '1.5px solid #E0D8D4' }}>
-              ✕ Clear filter: {activeCategory}
+              ✕ Clear filter
             </button>
           )}
         </div>
@@ -418,61 +463,73 @@ export function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
         {/* Providers */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">
-              {activeCategory ? activeCategory : 'Top Providers Near You'}
-            </p>
-            <p className="text-xs text-[#6E6E73]">{filtered.length} found</p>
+            <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">Real Approved Providers</p>
+            <p className="text-xs text-[#6E6E73]">{loadingProviders ? '…' : `${filtered.length} found`}</p>
           </div>
 
-          {filtered.length === 0 ? (
+          {loadingProviders ? (
+            <div className="glass-card rounded-2xl p-6 text-center text-xs text-[#6E6E73]">Loading providers…</div>
+          ) : filtered.length === 0 ? (
             <div className="glass-card rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
               <span className="text-3xl">🔍</span>
               <p className="font-semibold text-sm text-[#242424]">No providers found</p>
-              <p className="text-xs text-[#6E6E73]">Try a different search or category</p>
-              <button onClick={() => { setQuery(''); setActiveCategory(null) }}
-                className="action-btn px-4 py-2 rounded-xl text-xs font-bold text-[#EE674E]"
-                style={{ background: '#FFD6C9', border: '1.5px solid #F6B6A5' }}>Clear filters</button>
+              <p className="text-xs text-[#6E6E73]">
+                {providers.length === 0
+                  ? 'No approved providers in your country yet -- providers appear here the moment staff approve their application.'
+                  : 'Try a different search or category'}
+              </p>
+              {providers.length > 0 && (
+                <button onClick={() => { setQuery(''); setActiveCategory(null) }}
+                  className="action-btn px-4 py-2 rounded-xl text-xs font-bold text-[#EE674E]"
+                  style={{ background: '#FFD6C9', border: '1.5px solid #F6B6A5' }}>Clear filters</button>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
-              {filtered.map((p, i) => (
-                <div key={i} className="glass-card rounded-2xl p-3.5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg,${p.color},${p.color}cc)` }}>{p.name[0]}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="font-semibold text-sm text-[#242424]">{p.name}</p>
-                        {p.verified && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold text-[#6299D5]" style={{ background: '#EBF2FC' }}>✓ Verified</span>}
+              {filtered.map(p => {
+                const color = colorFor(p.id)
+                const name = p.business_name || 'Provider'
+                return (
+                  <div key={p.id} className="glass-card rounded-2xl p-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg flex-shrink-0"
+                        style={{ background: `linear-gradient(135deg,${color},${color}cc)` }}>{name[0]}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-semibold text-sm text-[#242424]">{name}</p>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold text-[#6299D5]" style={{ background: '#EBF2FC' }}>✓ Verified</span>
+                        </div>
+                        <p className="text-xs text-[#6E6E73]">{p.categories.join(', ') || 'General care'}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs font-semibold text-[#C49B30]">⭐ {p.rating != null ? p.rating.toFixed(1) : 'New'}</span>
+                          <span className="text-[10px] text-[#6E6E73]">{p.review_count} reviews</span>
+                          <span className="text-xs font-bold text-[#242424]">{priceLabel(p, '$')}</span>
+                        </div>
+                        <p className="text-[10px] text-[#55A67A] font-medium mt-0.5">
+                          {p.availability_days.length > 0 ? `🟢 Available ${p.availability_days.join(', ')}` : `📍 ${p.service_city ?? p.country}`}
+                        </p>
                       </div>
-                      <p className="text-xs text-[#6E6E73]">{p.role}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-xs font-semibold text-[#C49B30]">⭐ {p.rating}</span>
-                        <span className="text-[10px] text-[#6E6E73]">{p.reviews} reviews</span>
-                        <span className="text-xs font-bold text-[#242424]">{p.price}</span>
-                      </div>
-                      <p className="text-[10px] text-[#55A67A] font-medium mt-0.5">🟢 {p.avail}</p>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={() => setMessageProvider(p)}
+                        className="action-btn flex-1 py-2.5 rounded-xl text-xs font-bold text-[#EE674E] flex items-center justify-center gap-1"
+                        style={{ background: '#FFD6C9', border: '1.5px solid #F6B6A5', boxShadow: '0 2px 0 #F6B6A5' }}>
+                        💬 Message
+                      </button>
+                      <button onClick={() => setBookingProvider(p)}
+                        className="action-btn flex-1 py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1"
+                        style={{ background: `linear-gradient(135deg,${color},${color}cc)`, border: `1.5px solid ${color}99`, boxShadow: `0 3px 0 ${color}66` }}>
+                        📅 Book Now
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => setMessageProvider(p)}
-                      className="action-btn flex-1 py-2.5 rounded-xl text-xs font-bold text-[#EE674E] flex items-center justify-center gap-1"
-                      style={{ background: '#FFD6C9', border: '1.5px solid #F6B6A5', boxShadow: '0 2px 0 #F6B6A5' }}>
-                      💬 Message
-                    </button>
-                    <button onClick={() => setBookingProvider(p)}
-                      className="action-btn flex-1 py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1"
-                      style={{ background: `linear-gradient(135deg,${p.color},${p.color}cc)`, border: `1.5px solid ${p.color}99`, boxShadow: `0 3px 0 ${p.color}66` }}>
-                      📅 Book Now
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* My Requests — real persisted bookings, see docs/ARCHITECTURE.md §6/§13 */}
+        {/* My Requests — real persisted rows in the shared `bookings` table */}
         {bookings.length > 0 && (
           <div>
             <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-2">My Requests</p>
@@ -480,11 +537,11 @@ export function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
               {bookings.map(b => (
                 <div key={b.id} className="glass-card rounded-2xl p-3.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#242424] truncate">{b.providerName}</p>
-                    <p className="text-xs text-[#6E6E73]">{b.day} · {b.slot} · {b.durationHrs} hrs</p>
+                    <p className="text-sm font-semibold text-[#242424] truncate">{b.service_category}</p>
+                    <p className="text-xs text-[#6E6E73]">{new Date(b.scheduled_at).toLocaleDateString()} · {b.duration_hours} hrs · {b.currency} {(b.price_cents / 100).toFixed(0)}</p>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0" style={{ background: '#FEF3CD', color: '#B8860B' }}>
-                    Requested
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 capitalize" style={{ background: '#FEF3CD', color: '#B8860B' }}>
+                    {b.status}
                   </span>
                 </div>
               ))}
@@ -494,8 +551,12 @@ export function MarketplaceSubScreen({ onBack }: { onBack: () => void }) {
       </div>
     </div>
 
-    {messageProvider && <MessageSheet provider={messageProvider} onClose={() => setMessageProvider(null)} />}
-    {bookingProvider && <BookingSheet provider={bookingProvider} onClose={() => setBookingProvider(null)} onSave={saveBooking} />}
+    {messageProvider && <MessageSheet provider={messageProvider} color={colorFor(messageProvider.id)} onClose={() => setMessageProvider(null)} />}
+    {bookingProvider && (
+      <BookingSheet provider={bookingProvider} color={colorFor(bookingProvider.id)} householdId={householdId}
+        onClose={() => setBookingProvider(null)}
+        onSaved={saveBooking} />
+    )}
     </>
   )
 }

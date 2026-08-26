@@ -8,8 +8,8 @@
 export const FEATURES = {
   /** Stripe/Paddle/Apple Pay/Google Pay/crypto are UI mockups only — no real charge is ever made. */
   realPayments: false,
-  /** Marketplace provider list, availability and bookings are demo fixtures, not live data. */
-  liveMarketplace: false,
+  /** Marketplace provider list and booking requests are real (public_providers view, bookings table). Availability slots shown per provider are still illustrative -- no real per-slot calendar exists yet. */
+  liveMarketplace: true,
   /** AI chat responses are canned/simulated, not a real model call. */
   realAIChat: false,
   /** Voice assistant is a simulated state machine, not real STT/TTS. */

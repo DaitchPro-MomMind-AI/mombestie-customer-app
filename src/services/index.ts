@@ -16,4 +16,5 @@ export * from "./insuranceService";
 export * from "./discoveryService";
 export * from "./appointmentsService";
 export * from "./growthReferenceService";
+export * from "./providerDirectoryService";
 export const DEMO_CHILD_ID = "maya";
