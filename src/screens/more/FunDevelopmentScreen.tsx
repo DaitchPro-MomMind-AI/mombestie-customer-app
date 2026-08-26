@@ -4,12 +4,19 @@ import {
   listApprovedActivities, listFavoriteIds, toggleFavorite, logActivityCompletion,
   getCurrentHouseholdId, type Activity,
 } from '../../services'
+import { listChildren } from '../../services/childrenService'
 
 const AGE_BANDS = [
   { label: 'Newborn', months: 1 }, { label: '0–3mo', months: 2 }, { label: '3–6mo', months: 4 },
   { label: '6–12mo', months: 9 }, { label: '12–18mo', months: 15 }, { label: '18–24mo', months: 21 },
   { label: '2–3y', months: 30 },
 ]
+
+/** MBCST-40: picks the AGE_BANDS entry closest to a real child's actual age in months, computed from their real birthdate -- used only as the initial default, never overriding a real manual selection. */
+function ageBandForBirthdate(birthdate: string) {
+  const months = (Date.now() - new Date(birthdate).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+  return AGE_BANDS.reduce((closest, b) => (Math.abs(b.months - months) < Math.abs(closest.months - months) ? b : closest), AGE_BANDS[0])
+}
 
 const AREA_ICON: Record<string, string> = {
   visual_tracking: '👀', sensory: '🧶', gross_motor: '🏃', fine_motor: '✋', cognitive: '🧠',
@@ -320,7 +327,8 @@ export function FunDevelopmentSubScreen({ onBack }: { onBack: () => void }) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [householdId, setHouseholdId] = useState<string | null>(null)
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
-  const [ageBand, setAgeBand] = useState(AGE_BANDS[3]) // default 6-12mo
+  const [ageBand, setAgeBand] = useState(AGE_BANDS[3]) // fallback default (6-12mo) until a real child's birthdate resolves below
+  const [ageBandSetByUser, setAgeBandSetByUser] = useState(false)
   const [setting, setSetting] = useState<'any' | 'indoor' | 'outdoor'>('any')
   const [quickMode, setQuickMode] = useState<QuickMode>(null)
   const [fewMinutesDuration, setFewMinutesDuration] = useState<10 | 15 | 20 | 30>(15)
@@ -346,6 +354,18 @@ export function FunDevelopmentSubScreen({ onBack }: { onBack: () => void }) {
     getCurrentHouseholdId().then(id => { if (!cancelled) setHouseholdId(id) })
     return () => { cancelled = true }
   }, [ageBand, setting, quickMode, fewMinutesDuration])
+
+  // MBCST-40: once the real household resolves, default the age band to
+  // whichever real child is youngest, computed from their real birthdate --
+  // only while the person hasn't manually picked a band themselves.
+  useEffect(() => {
+    if (!householdId || ageBandSetByUser) return
+    listChildren(householdId).then(children => {
+      if (children.length === 0) return
+      const youngest = children.reduce((a, b) => (new Date(a.birthdate) > new Date(b.birthdate) ? a : b))
+      setAgeBand(ageBandForBirthdate(youngest.birthdate))
+    })
+  }, [householdId, ageBandSetByUser])
 
   useEffect(() => {
     if (!householdId) { setFavoriteIds(new Set()); return }
@@ -415,7 +435,7 @@ export function FunDevelopmentSubScreen({ onBack }: { onBack: () => void }) {
           {/* Age band filter */}
           <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
             {AGE_BANDS.map(b => (
-              <button key={b.label} onClick={() => setAgeBand(b)}
+              <button key={b.label} onClick={() => { setAgeBand(b); setAgeBandSetByUser(true) }}
                 className="action-btn flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold"
                 style={ageBand.label === b.label
                   ? { background: 'linear-gradient(135deg,#EE674E,#F47B66)', color: 'white', border: '2px solid #C94930' }
