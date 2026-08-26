@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLang } from '../i18n'
 import { Avatar } from '../components/atoms'
 import { ProfileSubScreen, FamilySubScreen, CaregiverHandoffSubScreen } from './more/FamilyCareScreens'
+import { ChildrenSubScreen } from './more/ChildrenScreen'
 import { ToddlerMealsSubScreen } from './more/MealsScreen'
 import { DevelopmentSubScreen } from './more/DevelopmentScreen'
 import { BabySuppliesSubScreen } from './more/SuppliesScreen'
@@ -16,12 +17,13 @@ import { FunDevelopmentSubScreen } from './more/FunDevelopmentScreen'
 import { FindCareSubScreen } from './more/FindCareScreen'
 import { ExploreSubScreen } from './more/ExploreScreen'
 
-type MoreSub = 'profile' | 'family' | 'handoff' | 'meals' | 'development' | 'supplies' | 'journal' | 'marketplace' | 'subscription' | 'notifications' | 'privacy' | 'security' | 'settings' | 'fun' | 'findcare' | 'explore' | null
+type MoreSub = 'profile' | 'children' | 'family' | 'handoff' | 'meals' | 'development' | 'supplies' | 'journal' | 'marketplace' | 'subscription' | 'notifications' | 'privacy' | 'security' | 'settings' | 'fun' | 'findcare' | 'explore' | null
 
 export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: () => void; darkMode: boolean; setDarkMode: (v: boolean) => void }) {
   const [sub, setSub] = useState<MoreSub>(null)
 
   if (sub === 'profile') return <ProfileSubScreen onBack={() => setSub(null)} />
+  if (sub === 'children') return <ChildrenSubScreen onBack={() => setSub(null)} />
   if (sub === 'family') return <FamilySubScreen onBack={() => setSub(null)} />
   if (sub === 'handoff') return <CaregiverHandoffSubScreen onBack={() => setSub(null)} />
   if (sub === 'meals') return <ToddlerMealsSubScreen onBack={() => setSub(null)} />
@@ -41,6 +43,7 @@ export function MoreScreen({ onSignOut, darkMode, setDarkMode }: { onSignOut: ()
   const { t } = useLang()
   const sections = [
     { label: t('section_family'), items: [
+      { icon: '👶', label: 'Children', sub: 'Add or manage profiles', key: 'children' as MoreSub },
       { icon: '👨‍👩‍👧', label: t('family_caregivers'), sub: '3 members', key: 'family' as MoreSub },
       { icon: '📋', label: t('caregiver_handoff'), sub: 'Generate handoff', key: 'handoff' as MoreSub },
     ]},
