@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useLang } from '../i18n'
 import { Avatar, StatCard, QuickAction } from '../components/atoms'
 import type { Screen } from '../types'
-import { DEMO_CHILD_ID, buildTimeline, useTrackingLogs } from '../services'
+import { buildTimeline, useTrackingLogs } from '../services'
 import type { NewTrackingLog } from '../services'
+import { useSelectedChild } from '../selectedChild'
 
 function LogSheet({ activeLog, onClose, onSave }: { activeLog: string; onClose: () => void; onSave: (input: Omit<NewTrackingLog, 'childId'>) => void }) {
   const [saved, setSaved] = useState(false)
@@ -264,7 +265,8 @@ export function HomeScreen({ onVoice, onSignOut, onNavigate }: { onVoice: () => 
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeLog, setActiveLog] = useState<string | null>(null)
   const [showAllLogs, setShowAllLogs] = useState(false)
-  const { logs, summary, save } = useTrackingLogs(DEMO_CHILD_ID)
+  const { childId } = useSelectedChild()
+  const { logs, summary, save } = useTrackingLogs(childId)
   const homeTimeline = buildTimeline(logs)
 
   const openLog = (label: string) => {

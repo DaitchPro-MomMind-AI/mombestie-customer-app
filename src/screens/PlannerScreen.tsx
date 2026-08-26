@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  DEMO_CHILD_ID, PLANNER_CATEGORY_TO_LOG_TYPE, reconcilePlanner, useTrackingLogs,
+  PLANNER_CATEGORY_TO_LOG_TYPE, reconcilePlanner, useTrackingLogs,
   getCurrentHouseholdId, listUpcomingAppointments, cancelAppointment, rescheduleAppointment, type Appointment,
 } from '../services'
+import { useSelectedChild } from '../selectedChild'
 
 const CATEGORY_META: Record<Appointment['category'], { icon: string; label: string; color: string }> = {
   medical: { icon: '🩺', label: 'Medical', color: '#6299D5' },
@@ -121,7 +122,8 @@ export function PlannerScreen() {
   // match within 90 min) instead of a disconnected local checkbox — see
   // src/services/plannerReconcile.ts. Activity/Appointment/Routine and any
   // `predicted` slot stay local-only toggles; there's no service for those yet.
-  const { logs, save, remove } = useTrackingLogs(DEMO_CHILD_ID)
+  const { childId } = useSelectedChild()
+  const { logs, save, remove } = useTrackingLogs(childId)
   const reconciled = reconcilePlanner(plannerItems, logs)
   const [manualDone, setManualDone] = useState<Set<number>>(new Set())
   const sections = ['Morning', 'Afternoon', 'Evening'] as const

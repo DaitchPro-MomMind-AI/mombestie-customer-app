@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react'
-import { DEMO_CHILD_ID, buildTimeline, useTrackingLogs, isAnyGrowthReferenceLoaded } from '../services'
+import { buildTimeline, useTrackingLogs, isAnyGrowthReferenceLoaded } from '../services'
+import { useSelectedChild } from '../selectedChild'
+
+function ageLabel(birthdate: string): string {
+  const birth = new Date(birthdate)
+  const now = new Date()
+  let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth())
+  let days = now.getDate() - birth.getDate()
+  if (days < 0) { months -= 1; days += 30 }
+  if (months < 0) return ''
+  return months === 0 ? `${days} day${days === 1 ? '' : 's'}` : `${months} month${months === 1 ? '' : 's'}, ${days} day${days === 1 ? '' : 's'}`
+}
 
 const kgToLb = (kg: number) => kg * 2.20462
 const lbToKg = (lb: number) => lb / 2.20462
@@ -8,7 +19,9 @@ const inToCm = (inches: number) => inches * 2.54
 
 export function BabyScreen() {
   const [tab, setTab] = useState<'overview' | 'timeline' | 'growth' | 'milestones'>('overview')
-  const { logs, summary, save } = useTrackingLogs(DEMO_CHILD_ID)
+  const { childId, children: householdChildren, setChildId } = useSelectedChild()
+  const selectedChild = householdChildren.find(c => c.id === childId)
+  const { logs, summary, save } = useTrackingLogs(childId)
   const babyTimeline = buildTimeline(logs)
   const feedSessions = logs.filter(l => l.type === 'Feed').length
 
@@ -61,21 +74,41 @@ export function BabyScreen() {
 
   return (
     <div className="scroll-area flex-1 px-4 pt-2 pb-4 slide-up">
-      {/* Header */}
+      {/* Header -- MBCST-33: real child name/age from the `children` table
+          when the household has one on file, falling back to the demo
+          persona name only while no real child exists yet. */}
       <div className="flex items-center gap-4 py-3 mb-4">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #FFD6C9, #F47B66)' }}>
           🍼
         </div>
-        <div>
-          <h1 className="font-display text-2xl text-[#242424]">Maya</h1>
-          <p className="text-sm text-[#6E6E73]">7 months, 12 days</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="font-display text-2xl text-[#242424]">{selectedChild?.name ?? 'Maya'}</h1>
+          <p className="text-sm text-[#6E6E73]">{selectedChild ? ageLabel(selectedChild.birthdate) : '7 months, 12 days'}</p>
           <div className="flex items-center gap-1.5 mt-1">
             <div className="w-2 h-2 rounded-full bg-[#55A67A]" />
             <span className="text-xs text-[#55A67A] font-medium">All good today</span>
           </div>
         </div>
       </div>
+
+      {/* Child switcher -- only shown once a household has more than one
+          real child on file (MBCST-33 "correctly scoped per child" AC). */}
+      {householdChildren.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-4" style={{ scrollbarWidth: 'none' }}>
+          {householdChildren.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setChildId(c.id)}
+              className={`action-btn flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold ${
+                c.id === childId ? 'bg-[#EE674E] text-white' : 'bg-[#F6EDE8] text-[#6E6E73]'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#F6EDE8] p-1 rounded-xl mb-4">
@@ -168,7 +201,7 @@ export function BabyScreen() {
               {referenceLoaded
                 ? 'Plotted against the selected pediatric growth reference.'
                 : "Percentiles aren't available yet — MomBestie hasn't loaded a pediatric growth reference dataset for this measurement type. Measurements are still saved and tracked over time."}
-              {' '}A single measurement can't determine overall health or development — your pediatrician can interpret Maya's growth pattern in the context of her medical history.
+              {' '}A single measurement can't determine overall health or development — your pediatrician can interpret {selectedChild?.name ?? 'your child'}'s growth pattern in the context of their medical history.
             </p>
           </div>
 
@@ -225,7 +258,7 @@ export function BabyScreen() {
       {tab === 'milestones' && (
         <div className="space-y-3">
           <div className="glass-card-strong rounded-2xl p-4">
-            <p className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide mb-3">Maya's Milestones</p>
+            <p className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide mb-3">{selectedChild?.name ?? 'Maya'}'s Milestones</p>
             <div className="space-y-3">
               {milestones.map((m, i) => (
                 <div key={i} className="flex items-center gap-3">

@@ -10,6 +10,7 @@ import { AIScreen, VoiceScreen } from './screens/AIScreen'
 import { PlannerScreen } from './screens/PlannerScreen'
 import { MoreScreen } from './screens/MoreScreen'
 import { hasActiveSession, onAuthStateChange, signOut } from './services'
+import { SelectedChildProvider } from './selectedChild'
 
 export default function App() {
   // MBCST-22: start in a real "checking" state rather than assuming
@@ -120,7 +121,7 @@ export default function App() {
         ) : appState === 'login' ? (
           <LoginScreen onLogin={() => setAppState('app')} />
         ) : (
-          <>
+          <SelectedChildProvider>
             {/* Background blobs */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
               <BlobBackground />
@@ -165,7 +166,7 @@ export default function App() {
 
             {/* Voice overlay */}
             {voiceOpen && <VoiceScreen onClose={() => setVoiceOpen(false)} />}
-          </>
+          </SelectedChildProvider>
         )}
       </LangContext.Provider>
       </div>
