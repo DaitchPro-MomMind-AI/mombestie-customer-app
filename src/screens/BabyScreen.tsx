@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { buildTimeline, useTrackingLogs, isAnyGrowthReferenceLoaded } from '../services'
 import { useSelectedChild } from '../selectedChild'
 import { getMilestoneReminders, MILESTONE_SOURCE } from '../services/milestoneReminders'
+import { exportTrackingCsv, downloadCsv } from '../services/trackingExport'
 
 function ageLabel(birthdate: string): string {
   const birth = new Date(birthdate)
@@ -64,6 +65,17 @@ export function BabyScreen() {
   // "firsts" baby-book list above, which is a different, unsourced feature.
   const checkpoints = selectedChild ? getMilestoneReminders(selectedChild.birthdate) : []
   const nextCheckpoint = checkpoints.find(c => !c.isPast)
+
+  // MBCST-36: real CSV export of this child's real tracking history for a
+  // caregiver-chosen date range, for handing to a pediatrician.
+  const todayIso = new Date().toISOString().slice(0, 10)
+  const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const [exportFrom, setExportFrom] = useState(thirtyDaysAgoIso)
+  const [exportTo, setExportTo] = useState(todayIso)
+  const handleExportCsv = () => {
+    const csv = exportTrackingCsv(childId, `${exportFrom}T00:00:00.000Z`, `${exportTo}T23:59:59.999Z`)
+    downloadCsv(`${(selectedChild?.name ?? 'tracking-history').toLowerCase().replace(/\s+/g, '-')}_${exportFrom}_to_${exportTo}.csv`, csv)
+  }
 
   const overviewCards = [
     { icon: '🌙', label: 'Sleep', value: `${Math.floor(summary.sleepMinutes / 60)}h ${summary.sleepMinutes % 60}m`, sub: 'Today', color: '#B0A0F0' },
@@ -171,7 +183,27 @@ export function BabyScreen() {
       )}
 
       {tab === 'timeline' && (
-        <div className="glass-card rounded-2xl p-4 space-y-0">
+        <div className="space-y-3">
+          <div className="glass-card rounded-2xl p-4">
+            <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide mb-3">Export for pediatrician</p>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <p className="text-[10px] text-[#6E6E73] mb-1">From</p>
+                <input type="date" value={exportFrom} max={exportTo} onChange={e => setExportFrom(e.target.value)} className="cartoon-input w-full px-2.5 py-2 text-xs text-[#242424]" />
+              </div>
+              <div>
+                <p className="text-[10px] text-[#6E6E73] mb-1">To</p>
+                <input type="date" value={exportTo} min={exportFrom} max={todayIso} onChange={e => setExportTo(e.target.value)} className="cartoon-input w-full px-2.5 py-2 text-xs text-[#242424]" />
+              </div>
+            </div>
+            <button onClick={handleExportCsv}
+              className="action-btn w-full py-2.5 rounded-xl text-xs font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#6299D5,#7FB0E8)' }}>
+              ⬇️ Export CSV
+            </button>
+            <p className="text-[10px] text-[#6E6E73] mt-2">Includes every real feeding, sleep, diaper, meal, and growth entry logged for this child in the selected range — a range with nothing logged exports a valid empty file.</p>
+          </div>
+          <div className="glass-card rounded-2xl p-4 space-y-0">
           {babyTimeline.map((item, i) => (
             <div key={i} className="flex gap-3">
               <div className="flex flex-col items-center">
@@ -187,6 +219,7 @@ export function BabyScreen() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
 
