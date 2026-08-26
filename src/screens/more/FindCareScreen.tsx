@@ -3,7 +3,10 @@ import { SubHeader } from '../../components/atoms'
 import { getCountryCapabilities, getCurrentHouseholdId, getInsuranceInfo, requestAppointment, type CountryCapabilities } from '../../services'
 import { supabase } from '../../services/supabaseClient'
 
-const SERVICES = ['Pediatrician', 'Pediatric Urgent Care', 'Family Physician', 'Telehealth', 'Pediatric Specialist']
+// MBCST-31: fallback shown only until the real distinct specialties load
+// below -- never the final option set, so a real specialty that doesn't
+// match one of these common labels is never silently unreachable.
+const FALLBACK_SERVICES = ['Pediatrician', 'Pediatric Urgent Care', 'Family Physician', 'Telehealth', 'Pediatric Specialist']
 const WHEN = ['Today', 'This Week', 'Any Time']
 const LANGUAGES = ['English', 'Spanish', 'Bengali', 'Japanese', 'French', 'Mandarin', 'Arabic']
 
@@ -119,7 +122,8 @@ function DoctorProfileSheet({ result, householdId, insurerName, onClose }: {
 
 export function FindCareSubScreen({ onBack }: { onBack: () => void }) {
   const [caps, setCaps] = useState<CountryCapabilities | null>(null)
-  const [service, setService] = useState(SERVICES[0])
+  const [services, setServices] = useState<string[]>(FALLBACK_SERVICES)
+  const [service, setService] = useState(FALLBACK_SERVICES[0])
   const [when, setWhen] = useState(WHEN[0])
   const [city, setCity] = useState('')
   const [postalCode, setPostalCode] = useState('')
@@ -140,6 +144,17 @@ export function FindCareSubScreen({ onBack }: { onBack: () => void }) {
         setInsurerName(info?.insurer_name ?? null)
       }
     })
+    // MBCST-31: derive the specialty filter list from real distinct values
+    // in public_healthcare_providers instead of only the static fallback,
+    // so a real specialty that isn't one of the common labels above is
+    // still selectable.
+    if (supabase) {
+      supabase.from('public_healthcare_providers').select('specialty').then(({ data, error }) => {
+        if (error || !data) return
+        const real = Array.from(new Set(data.map(r => r.specialty).filter(Boolean))).sort()
+        if (real.length > 0) { setServices(real); setService(real[0]) }
+      })
+    }
   }, [])
 
   const toggleLanguage = (l: string) => setLanguages(ls => ls.includes(l) ? ls.filter(x => x !== l) : [...ls, l])
@@ -202,7 +217,7 @@ export function FindCareSubScreen({ onBack }: { onBack: () => void }) {
           <div>
             <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide mb-1.5">Service</p>
             <div className="flex flex-wrap gap-2">
-              {SERVICES.map(s => (
+              {services.map(s => (
                 <button key={s} onClick={() => setService(s)}
                   className="action-btn px-3 py-2 rounded-xl text-xs font-semibold"
                   style={service === s ? { background: '#EBF2FC', border: '2px solid #6299D5', color: '#3D6FA8' } : { background: '#F0E8E4', border: '2px solid #E8E0DC', color: '#6E6E73' }}>
