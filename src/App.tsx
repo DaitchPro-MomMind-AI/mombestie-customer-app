@@ -9,9 +9,15 @@ import { BabyScreen } from './screens/BabyScreen'
 import { AIScreen, VoiceScreen } from './screens/AIScreen'
 import { PlannerScreen } from './screens/PlannerScreen'
 import { MoreScreen } from './screens/MoreScreen'
+import { hasActiveSession, onAuthStateChange, signOut } from './services'
 
 export default function App() {
+  // MBCST-22: start in a real "checking" state rather than assuming
+  // signed-out. `resumingSession` stays true only until the real Supabase
+  // session check below resolves, so a reload never flashes the login
+  // screen for someone who's genuinely still signed in.
   const [appState, setAppState] = useState<AppState>('login')
+  const [resumingSession, setResumingSession] = useState(true)
   const [screen, setScreen] = useState<Screen>('home')
   const [darkMode, setDarkMode] = useState(false)
   const [lang, setLang] = useState('English')
@@ -20,7 +26,30 @@ export default function App() {
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [aiSubScreen, setAISubScreen] = useState<AIScreenName>('chat')
 
-  const handleSignOut = () => setAppState('login')
+  useEffect(() => {
+    let cancelled = false
+    hasActiveSession().then(signedIn => {
+      if (!cancelled) {
+        setAppState(signedIn ? 'app' : 'login')
+        setResumingSession(false)
+      }
+    })
+    // A real sign-out (or session expiry / another tab signing out) should
+    // return this app to the login screen too, not just the explicit button.
+    const unsubscribe = onAuthStateChange(signedIn => {
+      if (!signedIn) setAppState('login')
+    })
+    return () => { cancelled = true; unsubscribe() }
+  }, [])
+
+  const handleSignOut = () => {
+    // MBCST-22: clear the real Supabase session (and any cached household
+    // state that depends on it) instead of only flipping local UI state --
+    // previously this left the real session intact, so a signed-out screen
+    // was reachable while the account was still technically authenticated.
+    void signOut()
+    setAppState('login')
+  }
 
   const handleVoice = () => {
     setVoiceOpen(true)
@@ -83,7 +112,12 @@ export default function App() {
         dir={isRTL ? 'rtl' : 'ltr'}
       >
       <LangContext.Provider value={{ lang, setLang, t }}>
-        {appState === 'login' ? (
+        {resumingSession ? (
+          // Real session check in flight (MBCST-22) -- deliberately blank
+          // rather than the login screen, so a genuinely signed-in person
+          // never sees a false "please sign in" flash on reload.
+          <div style={{ width: '100%', height: '100%' }} />
+        ) : appState === 'login' ? (
           <LoginScreen onLogin={() => setAppState('app')} />
         ) : (
           <>
