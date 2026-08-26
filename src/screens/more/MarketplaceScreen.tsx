@@ -76,7 +76,7 @@ function MessageSheet({ provider, color, onClose }: { provider: PublicProvider; 
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="#6E6E73" strokeWidth="1.6" strokeLinecap="round"/></svg>
             </button>
           </div>
-          <p className="mt-2 text-[10px] text-[#B0A8A4]">Messaging isn't wired to a real inbox yet -- these replies are simulated, not from {name}.</p>
+          <p className="mt-2 text-[10px] text-[#B0A8A4]">Messaging isn't wired to a real inbox yet -- these replies are simulated, not from {name}. Real messaging is tracked in MBADM-83.</p>
         </div>
 
         {/* Messages */}

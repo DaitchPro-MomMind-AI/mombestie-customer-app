@@ -1,26 +1,20 @@
 import { useState } from 'react'
 import { SubHeader } from '../../components/atoms'
-import { detectCountry, planPrice } from '../../services'
+import { detectCountry, planPrice, FEATURES } from '../../services'
 
-function TrialStartSheet({ planName, price, onClose, onConfirm }: {
-  planName: string; price: string; onClose: () => void; onConfirm: () => void
+/**
+ * MBCST-61: while FEATURES.realPayments is false, this app must never
+ * simulate a successful charge or a fake "Active" subscription. The prior
+ * version of this sheet collected a (fake, unsent) card number/expiry/CVV,
+ * ran a setTimeout "Processing…", and then showed "Trial Started!" plus an
+ * "✓ Active" plan badge -- a convincing fake checkout with no real gateway
+ * behind it. Replaced with an honest disclosure: real plan/price (still
+ * sourced from country_config via planPrice, unchanged), no payment fields,
+ * no fabricated success state, and no plan is ever marked active from here.
+ */
+function TrialStartSheet({ planName, price, onClose }: {
+  planName: string; price: string; onClose: () => void
 }) {
-  const [card, setCard] = useState('')
-  const [expiry, setExpiry] = useState('')
-  const [cvv, setCvv] = useState('')
-  const [agreed, setAgreed] = useState(false)
-  const [processing, setProcessing] = useState(false)
-  const [done, setDone] = useState(false)
-
-  const formatCard = (v: string) => v.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim()
-  const formatExpiry = (v: string) => { const d = v.replace(/\D/g,'').slice(0,4); return d.length > 2 ? d.slice(0,2)+'/'+d.slice(2) : d }
-  const canStart = card.replace(/\s/g,'').length === 16 && expiry.length === 5 && cvv.length >= 3 && agreed
-
-  const handleStart = () => {
-    setProcessing(true)
-    setTimeout(() => { setProcessing(false); setDone(true); setTimeout(onConfirm, 1200) }, 1600)
-  }
-
   return (
     <div className="absolute inset-0 z-50 flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" onClick={onClose} />
@@ -31,102 +25,28 @@ function TrialStartSheet({ planName, price, onClose, onConfirm }: {
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 coral-gradient rounded-xl flex items-center justify-center text-xl flex-shrink-0">✨</div>
             <div>
-              <h3 className="font-display text-lg text-[#242424]">Start Free Trial</h3>
-              <p className="text-xs text-[#6E6E73]">{planName} · 7 days free, then {price}/mo</p>
+              <h3 className="font-display text-lg text-[#242424]">{planName}</h3>
+              <p className="text-xs text-[#6E6E73]">{price}/mo</p>
             </div>
           </div>
         </div>
 
         <div className="scroll-area flex-1 px-5 pb-4 space-y-4">
-          {done ? (
-            <div className="flex flex-col items-center py-10 gap-4">
-              <div className="w-20 h-20 rounded-full bg-[#E6F4ED] flex items-center justify-center text-4xl pop-in">🎉</div>
-              <div className="text-center">
-                <p className="font-display text-xl text-[#242424]">Trial Started!</p>
-                <p className="text-sm text-[#6E6E73] mt-1">7 days free. Cancel anytime before day 7.</p>
-              </div>
-            </div>
-          ) : (<>
-            {/* Trial banner */}
-            <div className="rounded-2xl px-4 py-3.5 text-center" style={{ background: 'linear-gradient(135deg,#FFD6C9,#FFF3EE)', border: '1.5px solid #F6B6A5' }}>
-              <p className="font-bold text-sm text-[#EE674E]">🎁 7-Day Free Trial</p>
-              <p className="text-xs text-[#6E6E73] mt-0.5">Your card won't be charged until day 8. Cancel anytime.</p>
-            </div>
-
-            {/* Card input */}
-            <div className="glass-card rounded-2xl p-4 space-y-3">
-              <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">Payment details</p>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base">💳</span>
-                <input value={card} onChange={e => setCard(formatCard(e.target.value))}
-                  placeholder="1234 5678 9012 3456" inputMode="numeric"
-                  className="cartoon-input w-full pl-11 pr-4 py-3.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
-              </div>
-              <div className="flex gap-3">
-                <input value={expiry} onChange={e => setExpiry(formatExpiry(e.target.value))}
-                  placeholder="MM/YY" inputMode="numeric"
-                  className="cartoon-input flex-1 px-4 py-3.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
-                <input value={cvv} onChange={e => setCvv(e.target.value.replace(/\D/g,'').slice(0,4))}
-                  placeholder="CVV" inputMode="numeric"
-                  className="cartoon-input flex-1 px-4 py-3.5 text-sm text-[#242424] placeholder-[#C0B8B4]" />
-              </div>
-              <div className="flex items-center justify-center gap-2 pt-1">
-                {['🔒 Stripe','Visa','Mastercard'].map(b => (
-                  <span key={b} className="text-[10px] font-bold text-[#B0A8A4] px-2 py-1 rounded-lg" style={{ background: '#F0E8E4' }}>{b}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="glass-card rounded-2xl p-4 space-y-2">
-              <p className="text-xs font-bold text-[#6E6E73] uppercase tracking-wide">Order summary</p>
-              {[
-                { label: 'Plan', val: planName },
-                { label: 'Trial period', val: '7 days free' },
-                { label: 'Then billed', val: `${price}/month` },
-                { label: 'Due today', val: '$0.00' },
-              ].map((r,i) => (
-                <div key={i} className="flex justify-between items-center">
-                  <p className="text-xs text-[#6E6E73]">{r.label}</p>
-                  <p className={`text-sm font-semibold ${r.label === 'Due today' ? 'text-[#55A67A]' : 'text-[#242424]'}`}>{r.val}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Agreement */}
-            <button onClick={() => setAgreed(v => !v)}
-              className="action-btn w-full flex items-start gap-3 text-left py-1">
-              <div className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 mt-0.5 transition-all"
-                style={{ background: agreed ? '#EE674E' : 'white', borderColor: agreed ? '#EE674E' : '#F6B6A5' }}>
-                {agreed && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              </div>
-              <p className="text-xs text-[#6E6E73] leading-relaxed flex-1">
-                I agree to the <span className="text-[#EE674E] font-semibold">Terms of Service</span>. After 7 days, {price}/month will be charged automatically unless cancelled.
-              </p>
-            </button>
-          </>)}
+          <div className="rounded-2xl px-4 py-3.5" style={{ background: '#FEF3CD', border: '1.5px solid #F8C85E' }}>
+            <p className="font-bold text-sm text-[#7A6010]">⚠️ Not connected yet</p>
+            <p className="text-xs text-[#7A6010] mt-1 leading-relaxed">
+              Real billing isn't wired up yet -- there's no payment gateway behind this screen. No card is collected here and no plan is activated by closing this sheet. The price above is the real intended price for {planName}, not a placeholder.
+            </p>
+          </div>
         </div>
 
-        {!done && (
-          <div className="flex-shrink-0 px-5 pb-6 pt-3 flex gap-3 border-t border-[#F0E8E4]">
-            <button onClick={onClose}
-              className="action-btn w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: '#F0E8E4', border: '2px solid #E0D8D4', boxShadow: '0 3px 0 #D8D0CC' }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="#6E6E73" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <button onClick={handleStart} disabled={!canStart || processing}
-              className="action-btn flex-1 py-3.5 rounded-2xl font-bold text-sm text-white"
-              style={!canStart
-                ? { background: '#F6B6A5', border: '2px solid #E8A090', boxShadow: '0 3px 0 #E8A090' }
-                : processing
-                  ? { background: '#F6B6A5', border: '2px solid #E8A090', boxShadow: '0 2px 0 #E8A090' }
-                  : { background: 'linear-gradient(135deg,#EE674E,#F47B66)', border: '2px solid #C94930', boxShadow: '0 4px 0 #C94930' }}>
-              {processing
-                ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white inline-block spin-slow" />Processing…</span>
-                : '✨ Start My Free Trial'}
-            </button>
-          </div>
-        )}
+        <div className="flex-shrink-0 px-5 pb-6 pt-3 border-t border-[#F0E8E4]">
+          <button onClick={onClose}
+            className="action-btn w-full py-3.5 rounded-2xl font-bold text-sm text-white"
+            style={{ background: 'linear-gradient(135deg,#EE674E,#F47B66)', border: '2px solid #C94930', boxShadow: '0 4px 0 #C94930' }}>
+            Got it
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -135,7 +55,10 @@ function TrialStartSheet({ planName, price, onClose, onConfirm }: {
 
 export function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
-  const [activePlan, setActivePlan] = useState<string>('Free')
+  // MBCST-61: no real subscriptions table/gateway exists yet (FEATURES.realPayments
+  // is false), so every household is honestly on Free -- there is no real
+  // "activePlan" to track client-side until that's wired up.
+  const activePlan = 'Free'
   const [trialPlan, setTrialPlan] = useState<{ name: string; price: string } | null>(null)
   // Country-config-driven pricing — see docs/ARCHITECTURE.md §7.1/§7.2. Same
   // mechanism and same reference numbers as apps/website/src/i18n.ts.
@@ -180,15 +103,10 @@ export function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
       <div className="scroll-area flex-1 px-4 pb-6 space-y-4">
         <p className="text-sm text-[#6E6E73] text-center">Grows with your family</p>
 
-        {/* Active plan banner */}
-        {activePlan !== 'Free' && (
-          <div className="rounded-2xl px-4 py-3 flex items-center gap-3"
-            style={{ background: '#E6F4ED', border: '1.5px solid #A8D9BC' }}>
-            <span className="text-xl">✅</span>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[#55A67A]">Active: {activePlan}</p>
-              <p className="text-xs text-[#3D8A60]">7-day trial · Cancel anytime in settings</p>
-            </div>
+        {!FEATURES.realPayments && (
+          <div className="rounded-2xl px-4 py-3" style={{ background: '#FEF3CD', border: '1.5px solid #F8C85E' }}>
+            <p className="text-xs font-bold text-[#7A6010]">⚠️ Not connected yet</p>
+            <p className="text-[11px] text-[#7A6010] mt-0.5">Subscription purchases aren't processed yet -- prices below are real, but no plan can be activated or charged from this screen today.</p>
           </div>
         )}
 
@@ -250,7 +168,8 @@ export function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
                 ))}
               </div>
 
-              {/* Trial note for paid plans */}
+              {/* Trial note for paid plans -- describes the real intended trial
+                  policy, not a claim that starting a trial here works today */}
               {plan.trial && !isCurrent && (
                 <p className="text-[10px] text-[#6E6E73] text-center mb-2">🎁 7-day free trial · No charge until day 8</p>
               )}
@@ -284,7 +203,6 @@ export function SubscriptionSubScreen({ onBack }: { onBack: () => void }) {
         planName={trialPlan.name}
         price={trialPlan.price}
         onClose={() => setTrialPlan(null)}
-        onConfirm={() => { setActivePlan(trialPlan.name); setTrialPlan(null) }}
       />
     )}
     </>

@@ -3,6 +3,7 @@ import { buildTimeline, useTrackingLogs, isAnyGrowthReferenceLoaded } from '../s
 import { useSelectedChild } from '../selectedChild'
 import { getMilestoneReminders, MILESTONE_SOURCE } from '../services/milestoneReminders'
 import { exportTrackingCsv, downloadCsv } from '../services/trackingExport'
+import { FEATURES } from '../services'
 
 function ageLabel(birthdate: string): string {
   const birth = new Date(birthdate)
@@ -161,10 +162,21 @@ export function BabyScreen() {
               </div>
             ))}
           </div>
+          {/* MBCST-58: BabyPredict has no real trained model behind it yet
+              (FEATURES.realPredictions is false) -- showing a specific
+              invented time and confidence percentage here would be exactly
+              the kind of fabricated-but-plausible number this story exists
+              to prevent. Honest "not available yet" state instead. */}
           <div className="glass-card-strong rounded-2xl p-4">
             <p className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide mb-2">BabyPredict ✨</p>
-            <p className="text-sm text-[#242424] font-medium">Next nap: <span className="text-[#EE674E]">9:35–10:05 AM</span></p>
-            <p className="text-xs text-[#6E6E73] mt-0.5">82% confidence · Based on 7-day pattern</p>
+            {FEATURES.realPredictions ? (
+              <>
+                <p className="text-sm text-[#242424] font-medium">Next nap: <span className="text-[#EE674E]">9:35–10:05 AM</span></p>
+                <p className="text-xs text-[#6E6E73] mt-0.5">82% confidence · Based on 7-day pattern</p>
+              </>
+            ) : (
+              <p className="text-xs text-[#6E6E73]">⚠ Not available yet -- BabyPredict isn't connected to a real prediction model. No nap/bedtime prediction is generated today.</p>
+            )}
           </div>
 
           {/* MBCST-34: real rolling 7-day totals aggregated from the same

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { AI_SELF_DISCLOSURE, CONSULT_DISCLAIMER, classifyHealthIntent, urgentSafetyMessage, getCountryCapabilities } from '../services'
+import { AI_SELF_DISCLOSURE, CONSULT_DISCLAIMER, classifyHealthIntent, urgentSafetyMessage, getCountryCapabilities, FEATURES } from '../services'
 
 const chatHistory: { role: 'ai' | 'user'; text: string; tier?: 'consult' | 'urgent' }[] = [
   { role: 'ai', text: AI_SELF_DISCLOSURE },
@@ -70,6 +70,15 @@ export function AIScreen({ onVoice }: { onVoice: () => void }) {
           🎙️
         </button>
       </div>
+
+      {/* MBCST-50: persistent honest disclosure -- distinct from the
+          one-time AI_SELF_DISCLOSURE chat message, which can scroll out of
+          view. Wording matches provider-portal's equivalent AI disclosure. */}
+      {!FEATURES.realAIChat && (
+        <div className="mx-4 mb-2 rounded-xl px-3 py-2" style={{ background: '#FEF3CD', border: '1.5px solid #F8C85E' }}>
+          <p className="text-[11px] font-semibold text-[#7A6010]">⚠ Not connected yet -- your assistant needs a real AI model set up first. Replies below are scripted demo responses, not real AI-generated insight.</p>
+        </div>
+      )}
 
       {/* AI Orb */}
       <div className="flex justify-center pt-2 pb-4">
@@ -213,6 +222,14 @@ export function VoiceScreen({ onClose }: { onClose: () => void }) {
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
         </button>
       </div>
+
+      {/* MBCST-55: honest disclosure that voice is a simulated state
+          machine while FEATURES.realVoice is off -- no real STT/TTS runs. */}
+      {!FEATURES.realVoice && (
+        <div className="relative z-10 mx-5 mb-2 rounded-xl px-3 py-2 bg-white/20">
+          <p className="text-[11px] font-semibold text-white">⚠ Not connected yet -- voice needs a real speech-to-text/AI model set up first. This is a simulated walkthrough, not a live transcription.</p>
+        </div>
+      )}
 
       {/* Orb */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-8 px-5">

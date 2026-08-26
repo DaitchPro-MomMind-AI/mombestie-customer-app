@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { SubHeader } from '../../components/atoms'
 import { getCurrentHouseholdId } from '../../services/authService'
-import { listChildren, addChild, deleteChild, type Child } from '../../services/childrenService'
+import { listChildren, addChild, updateChild, deleteChild, type Child } from '../../services/childrenService'
+import { clearLocalTrackingData } from '../../services/trackingService'
 
 function ageLabel(birthdate: string): string {
   const birth = new Date(birthdate)
@@ -25,6 +26,14 @@ export function ChildrenSubScreen({ onBack }: { onBack: () => void }) {
   const [birthdate, setBirthdate] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // MBCST-76: real edit of an existing child row (updateChild), alongside
+  // the existing real add/remove -- a different form state from "add".
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editBirthdate, setEditBirthdate] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
 
   const refresh = (id: string) => {
     setLoading(true)
@@ -52,6 +61,29 @@ export function ChildrenSubScreen({ onBack }: { onBack: () => void }) {
   const remove = async (id: string) => {
     if (!householdId) return
     await deleteChild(id)
+    // MBCST-76: no real dependent DB rows are confirmed to key off child_id
+    // yet (children is the only real table this schema currently ties to a
+    // specific child) -- the local tracking-log store is cleared explicitly
+    // rather than left silently orphaned under a stale id.
+    clearLocalTrackingData(id)
+    refresh(householdId)
+  }
+
+  const startEdit = (c: Child) => {
+    setEditingId(c.id)
+    setEditName(c.name)
+    setEditBirthdate(c.birthdate)
+    setEditError(null)
+  }
+
+  const submitEdit = async () => {
+    if (!householdId || !editingId || editSaving) return
+    setEditError(null)
+    setEditSaving(true)
+    const result = await updateChild(editingId, { name: editName.trim(), birthdate: editBirthdate })
+    setEditSaving(false)
+    if (!result.ok) { setEditError(result.error ?? 'Could not save these changes -- please try again.'); return }
+    setEditingId(null)
     refresh(householdId)
   }
 
@@ -75,14 +107,47 @@ export function ChildrenSubScreen({ onBack }: { onBack: () => void }) {
         )}
 
         {children.map(c => (
-          <div key={c.id} className="glass-card rounded-2xl p-3.5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: '#FFD6C9' }}>👶</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[#242424]">{c.name}</p>
-              <p className="text-xs text-[#6E6E73]">{ageLabel(c.birthdate)} · born {new Date(c.birthdate).toLocaleDateString()}</p>
+          editingId === c.id ? (
+            <div key={c.id} className="glass-card rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide">Edit child</p>
+              <input
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Child's name"
+                className="cartoon-input w-full px-3.5 py-3 text-sm text-[#242424] placeholder-[#C0B8B4]"
+              />
+              <input
+                type="date"
+                value={editBirthdate}
+                onChange={e => setEditBirthdate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                className="cartoon-input w-full px-3.5 py-3 text-sm text-[#242424]"
+              />
+              {editError && (
+                <div className="rounded-xl px-3.5 py-2.5 text-xs font-medium text-[#C94930]" style={{ background: '#FEEAE6', border: '1.5px solid #F6B6A5' }}>
+                  ⚠️ {editError}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={() => { setEditingId(null); setEditError(null) }} className="action-btn flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#6E6E73]" style={{ background: '#F0E8E4' }}>Cancel</button>
+                <button onClick={submitEdit} disabled={editSaving || !editName.trim() || !editBirthdate}
+                  className="action-btn flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg,#EE674E,#F47B66)' }}>
+                  {editSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
             </div>
-            <button onClick={() => remove(c.id)} className="action-btn text-xs font-semibold text-[#D9534F] px-2 py-1">Remove</button>
-          </div>
+          ) : (
+            <div key={c.id} className="glass-card rounded-2xl p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: '#FFD6C9' }}>👶</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#242424]">{c.name}</p>
+                <p className="text-xs text-[#6E6E73]">{ageLabel(c.birthdate)} · born {new Date(c.birthdate).toLocaleDateString()}</p>
+              </div>
+              <button onClick={() => startEdit(c)} className="action-btn text-xs font-semibold text-[#6299D5] px-2 py-1">Edit</button>
+              <button onClick={() => remove(c.id)} className="action-btn text-xs font-semibold text-[#D9534F] px-2 py-1">Remove</button>
+            </div>
+          )
         ))}
 
         {householdId && (showForm ? (

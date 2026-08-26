@@ -33,6 +33,18 @@ export function deleteLog(childId: string, id: string): void {
   );
 }
 
+/**
+ * MBCST-76: when a real child profile is removed (childrenService.deleteChild),
+ * this clears that child's local tracking-log storage too, so removed data
+ * doesn't linger reachable under a stale childId -- there's no real backend
+ * table to cascade/archive yet (see [MBCST-33]), so this is the real,
+ * documented policy for this store: hard-delete alongside the child row.
+ */
+export function clearLocalTrackingData(childId: string): void {
+  writeJSON(key(childId), []);
+  writeJSON(`seeded:${childId}`, false);
+}
+
 export function todaysLogs(childId: string): TrackingLog[] {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
