@@ -8,7 +8,7 @@
  * is swapped for real `fetch` calls.
  */
 import { readJSON, writeJSON } from "./storage";
-import type { DailySummary, NewTrackingLog, TrackingLog } from "./types";
+import type { DailySummary, NewTrackingLog, TrackingLog, WeeklySummary } from "./types";
 
 const key = (childId: string) => `tracking:${childId}`;
 
@@ -50,6 +50,35 @@ export function todaySummary(childId: string): DailySummary {
     milkOz: logs
       .filter((l) => l.type === "Feed")
       .reduce((s, l) => s + (l.feed?.amountOz ?? 0), 0),
+    meals: logs.filter((l) => l.type === "Meal").length,
+    diapers: logs.filter((l) => l.type === "Diaper").length,
+  };
+}
+
+/**
+ * Real logs for a child in the last 7 days (today plus the previous 6),
+ * for weekly summary aggregation (MBCST-34). Re-derives from the same
+ * `listLogs` read used everywhere else, so an edit/delete is reflected the
+ * next time this is called -- there's no separate cached total to go stale.
+ */
+export function logsInLastWeek(childId: string): TrackingLog[] {
+  const weekAgo = new Date();
+  weekAgo.setHours(0, 0, 0, 0);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  return listLogs(childId).filter((l) => new Date(l.at) >= weekAgo);
+}
+
+export function weekSummary(childId: string): WeeklySummary {
+  const logs = logsInLastWeek(childId);
+  const feedLogs = logs.filter((l) => l.type === "Feed");
+  return {
+    sleepMinutes: Math.round(
+      logs
+        .filter((l) => l.type === "Sleep")
+        .reduce((s, l) => s + (l.sleep?.durationSec ?? 0), 0) / 60,
+    ),
+    milkOz: feedLogs.reduce((s, l) => s + (l.feed?.amountOz ?? 0), 0),
+    feedings: feedLogs.length,
     meals: logs.filter((l) => l.type === "Meal").length,
     diapers: logs.filter((l) => l.type === "Diaper").length,
   };

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { addLog, deleteLog, listLogs, seedDemoHistoryOnce, todaySummary } from "./trackingService";
-import type { DailySummary, NewTrackingLog, TrackingLog } from "./types";
+import { addLog, deleteLog, listLogs, seedDemoHistoryOnce, todaySummary, weekSummary } from "./trackingService";
+import type { DailySummary, NewTrackingLog, TrackingLog, WeeklySummary } from "./types";
 
 /**
  * React binding over the mock Tracking Service. Re-reads from storage on
@@ -10,10 +10,12 @@ import type { DailySummary, NewTrackingLog, TrackingLog } from "./types";
 export function useTrackingLogs(childId: string) {
   const [logs, setLogs] = useState<TrackingLog[]>([]);
   const [summary, setSummary] = useState<DailySummary>(() => todaySummary(childId));
+  const [weekly, setWeekly] = useState<WeeklySummary>(() => weekSummary(childId));
 
   const refresh = useCallback(() => {
     setLogs(listLogs(childId));
     setSummary(todaySummary(childId));
+    setWeekly(weekSummary(childId));
   }, [childId]);
 
   useEffect(() => {
@@ -37,5 +39,5 @@ export function useTrackingLogs(childId: string) {
     [childId, refresh],
   );
 
-  return { logs, summary, save, remove, refresh };
+  return { logs, summary, weekly, save, remove, refresh };
 }

@@ -21,7 +21,7 @@ export function BabyScreen() {
   const [tab, setTab] = useState<'overview' | 'timeline' | 'growth' | 'milestones'>('overview')
   const { childId, children: householdChildren, setChildId } = useSelectedChild()
   const selectedChild = householdChildren.find(c => c.id === childId)
-  const { logs, summary, save } = useTrackingLogs(childId)
+  const { logs, summary, weekly, save } = useTrackingLogs(childId)
   const babyTimeline = buildTimeline(logs)
   const feedSessions = logs.filter(l => l.type === 'Feed').length
 
@@ -146,6 +146,19 @@ export function BabyScreen() {
             <p className="text-xs font-semibold text-[#EE674E] uppercase tracking-wide mb-2">BabyPredict ✨</p>
             <p className="text-sm text-[#242424] font-medium">Next nap: <span className="text-[#EE674E]">9:35–10:05 AM</span></p>
             <p className="text-xs text-[#6E6E73] mt-0.5">82% confidence · Based on 7-day pattern</p>
+          </div>
+
+          {/* MBCST-34: real rolling 7-day totals aggregated from the same
+              logged rows as the "Today" cards above (trackingService.weekSummary) --
+              not an estimate, and a day with nothing logged simply contributes zero. */}
+          <div className="glass-card rounded-2xl p-4">
+            <p className="text-xs font-semibold text-[#6E6E73] uppercase tracking-wide mb-3">This Week</p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><p className="text-[#6E6E73] text-xs">Feedings</p><p className="font-semibold text-[#242424]">{weekly.feedings} · {weekly.milkOz} oz</p></div>
+              <div><p className="text-[#6E6E73] text-xs">Meals</p><p className="font-semibold text-[#242424]">{weekly.meals}</p></div>
+              <div><p className="text-[#6E6E73] text-xs">Diapers</p><p className="font-semibold text-[#242424]">{weekly.diapers}</p></div>
+              <div><p className="text-[#6E6E73] text-xs">Sleep</p><p className="font-semibold text-[#242424]">{Math.floor(weekly.sleepMinutes / 60)}h {weekly.sleepMinutes % 60}m</p></div>
+            </div>
           </div>
         </div>
       )}

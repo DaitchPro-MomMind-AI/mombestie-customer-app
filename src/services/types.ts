@@ -27,3 +27,13 @@ export interface DailySummary {
   meals: number;
   diapers: number;
 }
+
+/** Same shape as DailySummary but aggregated over a rolling 7-day window
+ * (today plus the previous 6 days), per MBCST-34. */
+export interface WeeklySummary {
+  sleepMinutes: number;
+  milkOz: number;
+  meals: number;
+  diapers: number;
+  feedings: number;
+}
